@@ -71,15 +71,12 @@ function arrayToLuckysheet(arr) {
     const celldata = [];
     for (let r = 0; r < arr.length; r++) {
         for (let c = 0; c < (arr[r] ? arr[r].length : 0); c++) {
-            if (arr[r][c] !== null && arr[r][c] !== undefined && arr[r][c] !== '') {
+            const cellValue = arr[r][c];
+            if (cellValue !== null && cellValue !== undefined && cellValue !== '') {
                 celldata.push({
                     r: r,
                     c: c,
-                    v: {
-                        v: arr[r][c],
-                        m: arr[r][c],
-                        ct: { fa: "General", t: "g" }
-                    }
+                    v: String(cellValue) // Just pass the string value directly
                 });
             }
         }
@@ -92,20 +89,27 @@ function luckysheetToArray() {
     const sheetData = luckysheet.getSheetData();
     if (!sheetData || !sheetData.length) return [];
     
-    // Find max row and col
-    let maxRow = 0;
-    let maxCol = 0;
+    // Find max row and col with actual data
+    let maxRow = -1;
+    let maxCol = -1;
     
-    sheetData.forEach(row => {
+    sheetData.forEach((row, rowIndex) => {
         if (row) {
             row.forEach((cell, colIndex) => {
-                if (cell && cell.v !== null && cell.v !== undefined) {
-                    maxCol = Math.max(maxCol, colIndex);
+                if (cell !== null && cell !== undefined) {
+                    // Check if cell has a value
+                    const value = typeof cell === 'object' ? cell.v : cell;
+                    if (value !== null && value !== undefined && value !== '') {
+                        maxRow = Math.max(maxRow, rowIndex);
+                        maxCol = Math.max(maxCol, colIndex);
+                    }
                 }
             });
-            maxRow = sheetData.length - 1;
         }
     });
+    
+    // If no data, return empty array
+    if (maxRow === -1 || maxCol === -1) return [];
     
     // Build 2D array
     const result = [];
@@ -113,7 +117,17 @@ function luckysheetToArray() {
         const row = [];
         for (let c = 0; c <= maxCol; c++) {
             const cell = sheetData[r] && sheetData[r][c];
-            row.push(cell && cell.v ? String(cell.v) : '');
+            let value = '';
+            
+            if (cell !== null && cell !== undefined) {
+                if (typeof cell === 'object' && cell.v !== undefined) {
+                    value = String(cell.v);
+                } else if (typeof cell === 'string' || typeof cell === 'number') {
+                    value = String(cell);
+                }
+            }
+            
+            row.push(value);
         }
         result.push(row);
     }
@@ -129,15 +143,18 @@ function loadDataIntoLuckysheet(data) {
 
     isInitializing = true;
     
-    const celldata = arrayToLuckysheet(data);
-    
-    // Clear existing content and load new data
+    // Clear the entire sheet first
     luckysheet.clearSheet(0);
     
-    // Set cell data one by one
-    celldata.forEach(cell => {
-        luckysheet.setCellValue(cell.r, cell.c, cell.v);
-    });
+    // Set cell values directly
+    for (let r = 0; r < data.length; r++) {
+        for (let c = 0; c < (data[r] ? data[r].length : 0); c++) {
+            const value = data[r][c];
+            if (value !== null && value !== undefined && value !== '') {
+                luckysheet.setCellValue(r, c, value);
+            }
+        }
+    }
     
     setTimeout(() => {
         isInitializing = false;
