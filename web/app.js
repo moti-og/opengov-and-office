@@ -234,21 +234,45 @@ function loadDataIntoLuckysheet(data, skipInitFlag = false) {
         isInitializing = true;
     }
     
+    // Clear the sheet first
+    try {
+        luckysheet.clearSheet(0);
+    } catch (e) {
+        console.warn('Clear sheet error:', e);
+    }
+
     // Set cell values directly
+    let cellsSet = 0;
     for (let r = 0; r < data.length; r++) {
-        for (let c = 0; c < (data[r] ? data[r].length : 0); c++) {
-            const value = data[r][c];
-            if (value !== null && value !== undefined && value !== '') {
-                try {
-                    luckysheet.setCellValue(r, c, {
-                        v: value,
-                        m: value
-                    });
-                } catch (e) {
-                    console.warn('Error setting cell', r, c, e);
-                }
+        const row = data[r];
+        if (!row || !Array.isArray(row)) continue; // Skip invalid rows
+        
+        for (let c = 0; c < row.length; c++) {
+            const value = row[c];
+            // Skip null, undefined, and empty string values
+            if (value === null || value === undefined || value === '') {
+                continue;
+            }
+            
+            try {
+                luckysheet.setCellValue(r, c, {
+                    v: String(value), // Ensure it's a string
+                    m: String(value)
+                });
+                cellsSet++;
+            } catch (e) {
+                console.warn(`Skipping cell (${r}, ${c}):`, e.message);
             }
         }
+    }
+    
+    console.log(`Set ${cellsSet} cells from ${data.length} rows`);
+    
+    // Force a refresh after setting data
+    try {
+        luckysheet.refresh();
+    } catch (e) {
+        console.warn('Refresh error:', e);
     }
     
     if (!skipInitFlag) {
@@ -419,15 +443,24 @@ async function initializeWithData() {
         let initialData = [];
         let initialLayout = null;
         
+        console.log('Fetch response status:', response.status);
+        
         if (response.ok) {
             const doc = await response.json();
+            console.log('Fetched document:', doc);
             if (doc && doc.data && doc.data.length) {
                 initialData = arrayToLuckysheet(doc.data);
                 initialLayout = doc.layout;
                 lastSyncedData = doc.data;
+                console.log('Converted to Luckysheet format:', initialData.length, 'cells');
+            } else {
+                console.log('No data in document, initializing empty sheet');
             }
+        } else {
+            console.log('Document not found, initializing empty sheet');
         }
         
+        console.log('Initializing Luckysheet with', initialData.length, 'cells');
         // Initialize Luckysheet with data AND layout
         initializeLuckysheet(initialData, initialLayout);
         

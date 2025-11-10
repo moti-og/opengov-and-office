@@ -177,38 +177,46 @@ async function initializeSync() {
       return;
     }
 
-    // Try to get existing document
+    // Read current Excel data first (don't overwrite user's work!)
+    const currentExcelData = await readExcelData();
+    console.log('Current Excel data on startup:', currentExcelData);
+
+    // Check if Excel has data
+    const hasExcelData = currentExcelData.data && currentExcelData.data.length > 0 && 
+                         currentExcelData.data.some(row => row.some(cell => cell !== '' && cell !== null));
+
+    // Try to get existing document from server
     const docResponse = await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}`);
 
     if (docResponse.ok) {
       const doc = await docResponse.json();
-      if (doc && doc.data && doc.data.length > 0) {
+      const hasServerData = doc && doc.data && doc.data.length > 0;
+
+      if (hasExcelData) {
+        // Excel has data - sync it to server (preserve user's work!)
+        console.log('Excel has data, syncing to server');
+        await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}/update`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            data: currentExcelData.data,
+            layout: currentExcelData.layout,
+            title: 'Excel Demo',
+            type: 'excel'
+          })
+        });
+        lastSyncedData = currentExcelData;
+        updateDataPreview(currentExcelData.data);
+      } else if (hasServerData) {
+        // Excel is empty, but server has data - load from server
+        console.log('Excel empty, loading from server');
         await writeExcelData(doc.data, doc.layout);
         lastSyncedData = { data: doc.data, layout: doc.layout };
         updateDataPreview(doc.data);
       } else {
-        // Create default data
-        const defaultData = [
-          ['Product', 'Q1 Sales', 'Q2 Sales', 'Q3 Sales'],
-          ['Widget A', '1500', '2300', '2100'],
-          ['Widget B', '2800', '3200', '3500'],
-          ['Widget C', '1200', '1400', '1600']
-        ];
-
-            await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}/update`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                data: defaultData,
-                layout: { columnWidths: [], rowHeights: [] },
-                title: 'Excel Demo',
-                type: 'excel'
-              })
-            });
-            
-            await writeExcelData(defaultData);
-            lastSyncedData = { data: defaultData, layout: { columnWidths: [], rowHeights: [] } };
-            updateDataPreview(defaultData);
+        // Both empty - do nothing, user can start fresh
+        console.log('Both Excel and server empty, starting fresh');
+        lastSyncedData = { data: [], layout: { columnWidths: [], rowHeights: [] } };
       }
     }
 
