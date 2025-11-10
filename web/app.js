@@ -167,13 +167,16 @@ function luckysheetToArray() {
     return result;
 }
 
-function loadDataIntoLuckysheet(data) {
+function loadDataIntoLuckysheet(data, skipInitFlag = false) {
     if (!data || !data.length) {
         updateStatus('✓ Connected (no data)', true);
         return;
     }
 
-    isInitializing = true;
+    // Only set initializing flag if not skipped (for SSE updates)
+    if (!skipInitFlag) {
+        isInitializing = true;
+    }
     
     // Set cell values directly
     for (let r = 0; r < data.length; r++) {
@@ -192,9 +195,12 @@ function loadDataIntoLuckysheet(data) {
         }
     }
     
-    setTimeout(() => {
-        isInitializing = false;
-    }, 500);
+    if (!skipInitFlag) {
+        setTimeout(() => {
+            isInitializing = false;
+            console.log('isInitializing set to false');
+        }, 500);
+    }
 }
 
 async function syncToServer() {
@@ -243,7 +249,7 @@ function setupSSE() {
                 }
                 
                 console.log('Received update from Excel');
-                loadDataIntoLuckysheet(payload.data);
+                loadDataIntoLuckysheet(payload.data, true); // Skip init flag for SSE updates
                 lastSyncedData = payload.data;
                 updateStatus('✓ Updated from Excel', true);
             }
@@ -280,7 +286,7 @@ async function initializeWithData() {
         if (response.ok) {
             const doc = await response.json();
             if (doc && doc.data && doc.data.length) {
-                loadDataIntoLuckysheet(doc.data);
+                loadDataIntoLuckysheet(doc.data, false); // Set initializing flag
                 lastSyncedData = doc.data;
             }
         }
@@ -288,9 +294,10 @@ async function initializeWithData() {
         // Setup SSE after everything is loaded
         setTimeout(() => {
             isInitializing = false;
+            console.log('Initialization complete - isInitializing now false');
             setupSSE();
             updateStatus('✓ Live sync active', true);
-        }, 500);
+        }, 1000); // Increased to 1000ms to ensure Luckysheet is fully ready
         
     } catch (error) {
         console.error('Initialization error:', error);
