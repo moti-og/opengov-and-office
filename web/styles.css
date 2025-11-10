@@ -80,20 +80,3 @@ h1 {
     height: calc(100vh - 51px); /* Full height minus header */
     position: relative;
 }
-
-/* Fix Luckysheet toolbar visibility */
-#luckysheet .luckysheet-toolbar-button,
-#luckysheet .luckysheet-toolbar-select,
-#luckysheet .luckysheet-toolbar-menu-button {
-    color: #000 !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-}
-
-#luckysheet .luckysheet-icon-redo,
-#luckysheet .luckysheet-icon-undo,
-#luckysheet .luckysheet-icon-paintformat,
-#luckysheet .luckysheet-toolbar-button span {
-    color: #000 !important;
-    opacity: 1 !important;
-}
