@@ -1,0 +1,2 @@
+﻿# Placeholder file for icon-32.png
+# In production, replace with actual 32x32 PNG icon

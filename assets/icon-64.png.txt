@@ -1,0 +1,2 @@
+﻿# Placeholder file for icon-64.png  
+# In production, replace with actual 64x64 PNG icon
