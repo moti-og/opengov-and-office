@@ -26,6 +26,13 @@ echo   Starting OpenGov Office Servers
 echo ========================================
 echo.
 
+REM Kill any processes on our ports first (clean start)
+echo [0/2] Cleaning up ports 3000 and 3001...
+powershell -NoProfile -Command "$proc = Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess; if ($proc) { Write-Host '  - Killing process on port 3001'; Stop-Process -Id $proc -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1 }" >nul 2>&1
+powershell -NoProfile -Command "$proc = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess; if ($proc) { Write-Host '  - Killing process on port 3000'; Stop-Process -Id $proc -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1 }" >nul 2>&1
+echo   - Ports cleared
+echo.
+
 REM Start backend server (MongoDB + Express)
 echo [1/2] Starting backend server (port 3001)...
 start "OpenGov Backend" cmd /k "cd /d %~dp0..\..\server && node index.js"
@@ -61,9 +68,14 @@ echo   Stopping OpenGov Office Servers
 echo ========================================
 echo.
 
-REM Stop Node processes
-echo Stopping Node.js processes...
-taskkill /FI "WINDOWTITLE eq OpenGov*" /F >nul 2>&1
+REM Kill ONLY processes on our ports (3000, 3001)
+echo Stopping Node.js processes on ports 3000 and 3001...
+
+REM Kill port 3001 (backend)
+powershell -NoProfile -Command "$proc = Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess; if ($proc) { Write-Host '  - Killed backend server on port 3001 (PID:' $proc ')'; Stop-Process -Id $proc -Force -ErrorAction SilentlyContinue } else { Write-Host '  - No process found on port 3001' }"
+
+REM Kill port 3000 (add-in dev server)
+powershell -NoProfile -Command "$proc = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess; if ($proc) { Write-Host '  - Killed add-in dev server on port 3000 (PID:' $proc ')'; Stop-Process -Id $proc -Force -ErrorAction SilentlyContinue } else { Write-Host '  - No process found on port 3000' }"
 
 REM Also try to stop Excel debugging
 cd /d %~dp0..\..
