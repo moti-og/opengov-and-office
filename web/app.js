@@ -308,27 +308,47 @@ function applyLayoutToLuckysheet(layout) {
     
     console.log('Applying layout to Luckysheet:', layout);
     
-    // Apply column widths
-    if (layout.columnWidths && layout.columnWidths.length > 0) {
-        layout.columnWidths.forEach((width, index) => {
-            try {
-                luckysheet.setColumnWidth(index, width);
-            } catch (e) {
-                console.warn('Error setting column width', index, e);
-            }
-        });
+    // Get current sheet dimensions to avoid applying layout to non-existent rows/cols
+    const sheetData = luckysheet.getSheetData();
+    if (!sheetData || !sheetData.length) {
+        console.log('Sheet is empty, skipping layout application');
+        return;
     }
     
-    // Apply row heights
-    if (layout.rowHeights && layout.rowHeights.length > 0) {
-        layout.rowHeights.forEach((height, index) => {
-            try {
-                luckysheet.setRowHeight(index, height);
-            } catch (e) {
-                console.warn('Error setting row height', index, e);
+    const maxRow = sheetData.length;
+    const maxCol = sheetData[0] ? sheetData[0].length : 0;
+    
+    console.log(`Sheet has ${maxRow} rows, ${maxCol} cols`);
+    
+    // Apply column widths (only up to maxCol)
+    if (layout.columnWidths && layout.columnWidths.length > 0) {
+        for (let index = 0; index < Math.min(layout.columnWidths.length, maxCol); index++) {
+            const width = layout.columnWidths[index];
+            if (width && width > 0) {
+                try {
+                    luckysheet.setColumnWidth(index, width);
+                } catch (e) {
+                    // Silently ignore
+                }
             }
-        });
+        }
     }
+    
+    // Apply row heights (only up to maxRow)
+    if (layout.rowHeights && layout.rowHeights.length > 0) {
+        for (let index = 0; index < Math.min(layout.rowHeights.length, maxRow); index++) {
+            const height = layout.rowHeights[index];
+            if (height && height > 0) {
+                try {
+                    luckysheet.setRowHeight(index, height);
+                } catch (e) {
+                    // Silently ignore
+                }
+            }
+        }
+    }
+    
+    console.log(`Applied layout to ${maxRow} rows, ${maxCol} cols`);
 }
 
 async function syncToServer() {
