@@ -141,34 +141,56 @@ function loadDataIntoLuckysheet(data) {
         return;
     }
 
+    console.log('Loading data into Luckysheet:', data);
     isInitializing = true;
     
-    // Set cell values directly
-    for (let r = 0; r < data.length; r++) {
-        for (let c = 0; c < (data[r] ? data[r].length : 0); c++) {
-            const value = data[r][c];
-            if (value !== null && value !== undefined && value !== '') {
-                try {
-                    luckysheet.setCellValue(r, c, {
-                        v: value,
-                        m: value
+    // Set cell values using jfrefreshgrid (batch update)
+    try {
+        const celldata = [];
+        for (let r = 0; r < data.length; r++) {
+            for (let c = 0; c < (data[r] ? data[r].length : 0); c++) {
+                const value = data[r][c];
+                if (value !== null && value !== undefined && value !== '') {
+                    celldata.push({
+                        r: r,
+                        c: c,
+                        v: {
+                            v: value,
+                            m: value,
+                            ct: { fa: 'General', t: 'g' }
+                        }
                     });
-                } catch (e) {
-                    console.warn('Error setting cell', r, c, e);
+                }
+            }
+        }
+        
+        console.log('Setting celldata:', celldata);
+        
+        // Use jfrefreshgrid for batch update
+        if (celldata.length > 0) {
+            luckysheet.jfrefreshgrid(celldata, [{ row: [0, data.length - 1], column: [0, data[0].length - 1] }]);
+        }
+        
+    } catch (e) {
+        console.error('Error loading data:', e);
+        // Fallback to individual cell updates
+        for (let r = 0; r < data.length; r++) {
+            for (let c = 0; c < (data[r] ? data[r].length : 0); c++) {
+                const value = data[r][c];
+                if (value !== null && value !== undefined && value !== '') {
+                    try {
+                        luckysheet.setCellValue(r, c, value);
+                    } catch (err) {
+                        console.warn('Error setting cell', r, c, err);
+                    }
                 }
             }
         }
     }
     
-    // Force a refresh
-    try {
-        luckysheet.refresh();
-    } catch (e) {
-        console.warn('Refresh error:', e);
-    }
-    
     setTimeout(() => {
         isInitializing = false;
+        console.log('Data loading complete');
     }, 500);
 }
 
