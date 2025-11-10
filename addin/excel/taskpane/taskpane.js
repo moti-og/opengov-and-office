@@ -49,30 +49,75 @@ async function readExcelData() {
   return Excel.run(async (context) => {
     const sheet = context.workbook.worksheets.getActiveWorksheet();
     const range = sheet.getUsedRange();
-    range.load('values');
+    range.load('values, rowCount, columnCount');
     await context.sync();
-    return range.values;
+    
+    const data = range.values;
+    const rowCount = range.rowCount;
+    const colCount = range.columnCount;
+    
+    // Read column widths
+    const columnWidths = [];
+    for (let c = 0; c < colCount; c++) {
+      const col = sheet.getRangeByIndexes(0, c, 1, 1);
+      col.load('format/columnWidth');
+      columnWidths.push(col);
+    }
+    
+    // Read row heights
+    const rowHeights = [];
+    for (let r = 0; r < rowCount; r++) {
+      const row = sheet.getRangeByIndexes(r, 0, 1, 1);
+      row.load('format/rowHeight');
+      rowHeights.push(row);
+    }
+    
+    await context.sync();
+    
+    return {
+      data: data,
+      layout: {
+        columnWidths: columnWidths.map(col => col.format.columnWidth),
+        rowHeights: rowHeights.map(row => row.format.rowHeight)
+      }
+    };
   });
 }
 
-async function writeExcelData(data) {
+async function writeExcelData(data, layout = null) {
   if (!data || !data.length) return;
 
   await Excel.run(async (context) => {
     const sheet = context.workbook.worksheets.getActiveWorksheet();
-    sheet.getRange().clear();
     const range = sheet.getRangeByIndexes(0, 0, data.length, data[0].length);
     range.values = data;
+    
+    // Apply column widths if provided
+    if (layout && layout.columnWidths && layout.columnWidths.length > 0) {
+      for (let c = 0; c < Math.min(layout.columnWidths.length, data[0].length); c++) {
+        const col = sheet.getRangeByIndexes(0, c, 1, 1);
+        col.format.columnWidth = layout.columnWidths[c];
+      }
+    }
+    
+    // Apply row heights if provided
+    if (layout && layout.rowHeights && layout.rowHeights.length > 0) {
+      for (let r = 0; r < Math.min(layout.rowHeights.length, data.length); r++) {
+        const row = sheet.getRangeByIndexes(r, 0, 1, 1);
+        row.format.rowHeight = layout.rowHeights[r];
+      }
+    }
+    
     await context.sync();
   });
 }
 
 async function syncExcelToServer() {
   try {
-    const data = await readExcelData();
+    const result = await readExcelData();
     
     // Don't sync if data hasn't changed
-    if (JSON.stringify(data) === JSON.stringify(lastSyncedData)) {
+    if (JSON.stringify(result) === JSON.stringify(lastSyncedData)) {
       return;
     }
 
@@ -81,13 +126,18 @@ async function syncExcelToServer() {
     const response = await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}/update`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data, title: 'Excel Demo', type: 'excel' })
+      body: JSON.stringify({ 
+        data: result.data, 
+        layout: result.layout,
+        title: 'Excel Demo', 
+        type: 'excel' 
+      })
     });
 
     if (response.ok) {
-      lastSyncedData = data;
+      lastSyncedData = result;
       updateStatus('✓ Synced', true);
-      updateDataPreview(data);
+      updateDataPreview(result.data);
     } else {
       updateStatus('Error syncing', false);
     }
@@ -133,8 +183,8 @@ async function initializeSync() {
     if (docResponse.ok) {
       const doc = await docResponse.json();
       if (doc && doc.data && doc.data.length > 0) {
-        await writeExcelData(doc.data);
-        lastSyncedData = doc.data;
+        await writeExcelData(doc.data, doc.layout);
+        lastSyncedData = { data: doc.data, layout: doc.layout };
         updateDataPreview(doc.data);
       } else {
         // Create default data
@@ -145,19 +195,20 @@ async function initializeSync() {
           ['Widget C', '1200', '1400', '1600']
         ];
 
-        await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}/update`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            data: defaultData,
-            title: 'Excel Demo',
-            type: 'excel'
-          })
-        });
-
-        await writeExcelData(defaultData);
-        lastSyncedData = defaultData;
-        updateDataPreview(defaultData);
+            await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}/update`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                data: defaultData,
+                layout: { columnWidths: [], rowHeights: [] },
+                title: 'Excel Demo',
+                type: 'excel'
+              })
+            });
+            
+            await writeExcelData(defaultData);
+            lastSyncedData = { data: defaultData, layout: { columnWidths: [], rowHeights: [] } };
+            updateDataPreview(defaultData);
       }
     }
 
@@ -181,13 +232,14 @@ function setupSSE() {
       const payload = JSON.parse(event.data);
       if (payload.type === 'data-update' && payload.documentId === DOCUMENT_ID) {
         // Don't update if data is same
-        if (JSON.stringify(payload.data) === JSON.stringify(lastSyncedData)) {
+        const newData = { data: payload.data, layout: payload.layout };
+        if (JSON.stringify(newData) === JSON.stringify(lastSyncedData)) {
           return;
         }
         
         console.log('Received update from web');
-        await writeExcelData(payload.data);
-        lastSyncedData = payload.data;
+        await writeExcelData(payload.data, payload.layout);
+        lastSyncedData = newData;
         updateDataPreview(payload.data);
         updateStatus('✓ Updated from web', true);
       }

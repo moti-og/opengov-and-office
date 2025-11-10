@@ -5,6 +5,10 @@ const documentSchema = new mongoose.Schema({
   title: { type: String, required: true },
   type: { type: String, enum: ['excel', 'word', 'powerpoint', 'web'], required: true },
   data: { type: [[String]], default: [] },
+  layout: {
+    columnWidths: { type: [Number], default: [] },  // Width in pixels for each column
+    rowHeights: { type: [Number], default: [] }     // Height in pixels for each row
+  },
   metadata: {
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },

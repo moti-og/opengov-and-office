@@ -42,15 +42,29 @@ router.post('/:id/update', async (req, res) => {
         documentId: req.params.id,
         title: req.body.title || 'Untitled',
         type: req.body.type || 'excel',
-        data: req.body.data
+        data: req.body.data,
+        layout: req.body.layout || { columnWidths: [], rowHeights: [] }
       });
     } else {
-      document.data = req.body.data;
+      // Update data if provided
+      if (req.body.data !== undefined) {
+        document.data = req.body.data;
+      }
+      
+      // Update layout if provided
+      if (req.body.layout !== undefined) {
+        document.layout = req.body.layout;
+      }
+      
       document.metadata.version += 1;
     }
     await document.save();
     const broadcast = req.app.get('broadcast');
-    broadcast('data-update', { documentId: document.documentId, data: document.data });
+    broadcast('data-update', { 
+      documentId: document.documentId, 
+      data: document.data,
+      layout: document.layout
+    });
     res.json(document);
   } catch (error) {
     res.status(400).json({ error: error.message });
