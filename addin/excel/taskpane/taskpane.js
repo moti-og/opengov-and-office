@@ -5,6 +5,7 @@ let eventSource = null;
 let isConnected = false;
 
 let lastSyncedData = null;
+let isWritingFromSSE = false; // Flag to prevent sync loops when receiving SSE updates
 
 Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
@@ -20,6 +21,12 @@ function setupChangeListener() {
     
     // Listen for cell changes
     sheet.onChanged.add(async (event) => {
+      // Ignore changes while writing from SSE to prevent sync loops
+      if (isWritingFromSSE) {
+        console.log('Ignoring change - writing from SSE');
+        return;
+      }
+      
       console.log('Cell changed, auto-syncing...');
       // Debounce: only sync if no changes for 1 second
       clearTimeout(window.autoSyncTimeout);
@@ -245,11 +252,23 @@ function setupSSE() {
           return;
         }
         
-        console.log('Received update from web');
-        await writeExcelData(payload.data, payload.layout);
-        lastSyncedData = newData;
-        updateDataPreview(payload.data);
-        updateStatus('✓ Updated from web', true);
+        console.log('Received update from web, disabling onChanged temporarily');
+        
+        // Disable onChanged handler to prevent sync loop
+        isWritingFromSSE = true;
+        
+        try {
+          await writeExcelData(payload.data, payload.layout);
+          lastSyncedData = newData;
+          updateDataPreview(payload.data);
+          updateStatus('✓ Updated from web', true);
+        } finally {
+          // Re-enable after a delay (let pending events finish)
+          setTimeout(() => {
+            isWritingFromSSE = false;
+            console.log('Re-enabled onChanged handler');
+          }, 1500);
+        }
       }
     } catch (error) {
       // Silently ignore cell-editing errors
