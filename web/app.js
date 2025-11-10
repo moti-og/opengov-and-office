@@ -143,15 +143,16 @@ function loadDataIntoLuckysheet(data) {
 
     isInitializing = true;
     
-    // Clear the entire sheet first
-    luckysheet.clearSheet(0);
-    
-    // Set cell values directly
+    // Set cell values directly without clearing (to avoid issues)
     for (let r = 0; r < data.length; r++) {
         for (let c = 0; c < (data[r] ? data[r].length : 0); c++) {
             const value = data[r][c];
             if (value !== null && value !== undefined && value !== '') {
-                luckysheet.setCellValue(r, c, value);
+                // Use setCellValue with all required params to avoid undefined issues
+                luckysheet.setCellValue(r, c, {
+                    v: value,
+                    m: value
+                });
             }
         }
     }
@@ -228,7 +229,6 @@ function setupSSE() {
         setTimeout(setupSSE, 5000);
     };
 }
-
 async function initializeWithData() {
     updateStatus('Connecting...', false);
     
@@ -262,3 +262,4 @@ async function initializeWithData() {
         initializeLuckysheet([]);
     }
 }
+
