@@ -25,6 +25,11 @@ function updateStatus(text, connected = null) {
 }
 
 function initializeLuckysheet(initialData = [], initialLayout = null) {
+    console.log('=== initializeLuckysheet called ===');
+    console.log('initialData length:', initialData.length);
+    console.log('initialData:', initialData);
+    console.log('initialLayout:', initialLayout);
+    
     const config = {};
     
     // Apply column widths if provided
@@ -60,7 +65,7 @@ function initializeLuckysheet(initialData = [], initialLayout = null) {
             color: "",
             status: "1",
             order: "0",
-            data: initialData,
+            celldata: initialData,  // Use celldata for the array format [{r, c, v}]
             config: config,
             index: 0
         }],
