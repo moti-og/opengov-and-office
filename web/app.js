@@ -47,13 +47,45 @@ function initializeLuckysheet(initialData = []) {
             index: 0
         }],
         hook: {
-            cellUpdated: function(r, c, oldValue, newValue, isRefresh) {
-                if (isInitializing || isRefresh) return;
+            cellEditAfter: function(r, c, oldValue, newValue) {
+                if (isInitializing) {
+                    console.log('Skipping sync - initializing');
+                    return;
+                }
                 
-                console.log('Cell updated:', r, c, newValue);
+                console.log('cellEditAfter fired:', r, c, 'old:', oldValue, 'new:', newValue);
                 // Debounce sync
                 clearTimeout(window.luckysheetSyncTimeout);
                 window.luckysheetSyncTimeout = setTimeout(() => {
+                    console.log('Syncing to server after cell edit');
+                    syncToServer();
+                }, 500);
+            },
+            cellUpdated: function(r, c, oldValue, newValue, isRefresh) {
+                if (isInitializing || isRefresh) {
+                    console.log('Skipping sync - initializing or refresh');
+                    return;
+                }
+                
+                console.log('cellUpdated fired:', r, c, newValue);
+                // Debounce sync
+                clearTimeout(window.luckysheetSyncTimeout);
+                window.luckysheetSyncTimeout = setTimeout(() => {
+                    console.log('Syncing to server after cell update');
+                    syncToServer();
+                }, 500);
+            },
+            rangeEditAfter: function(range, data) {
+                if (isInitializing) {
+                    console.log('Skipping sync - initializing');
+                    return;
+                }
+                
+                console.log('rangeEditAfter fired:', range, data);
+                // Debounce sync
+                clearTimeout(window.luckysheetSyncTimeout);
+                window.luckysheetSyncTimeout = setTimeout(() => {
+                    console.log('Syncing to server after range edit');
                     syncToServer();
                 }, 500);
             }
