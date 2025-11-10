@@ -12,6 +12,8 @@ app.use(express.json());
 
 // Serve web interface at root
 app.use(express.static(path.join(__dirname, '..', 'web')));
+// Serve node_modules for Luckysheet
+app.use('/node_modules', express.static(path.join(__dirname, '..', 'node_modules')));
 
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/opengov-office')
   .then(() => console.log('✓ Connected to MongoDB'))
