@@ -1,2 +1,0 @@
-﻿# Placeholder file for icon-16.png
-# In production, replace with actual 16x16 PNG icon

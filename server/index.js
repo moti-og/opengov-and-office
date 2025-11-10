@@ -1,26 +1,25 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.SERVER_PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
 
-// Serve static files for add-ins
-app.use('/addin', express.static(path.join(__dirname, 'addin')));
-app.use('/assets', express.static(path.join(__dirname, 'assets')));
+// Serve web interface at root
+app.use(express.static(path.join(__dirname, '..', 'web')));
 
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/opengov-office')
+  .then(() => console.log('✓ Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
 
 const clients = [];
 
-app.get('/', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.json({ message: 'OpenGov Office Server Running', status: 'ok' });
 });
 
@@ -56,6 +55,7 @@ const documentsRouter = require('./routes/documents');
 app.use('/api/documents', documentsRouter);
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  console.log(`Add-in files: http://localhost:${PORT}/addin/excel/taskpane.html`);
+  console.log(`✓ Server running on http://localhost:${PORT}`);
+  console.log(`✓ SSE endpoint: http://localhost:${PORT}/api/stream`);
 });
+

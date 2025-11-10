@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const Document = require('../models/Document');
 
@@ -35,10 +35,19 @@ router.post('/', async (req, res) => {
 
 router.post('/:id/update', async (req, res) => {
   try {
-    const document = await Document.findOne({ documentId: req.params.id });
-    if (!document) return res.status(404).json({ error: 'Document not found' });
-    document.data = req.body.data;
-    document.metadata.version += 1;
+    let document = await Document.findOne({ documentId: req.params.id });
+    if (!document) {
+      // Create if doesn't exist
+      document = new Document({
+        documentId: req.params.id,
+        title: req.body.title || 'Untitled',
+        type: req.body.type || 'excel',
+        data: req.body.data
+      });
+    } else {
+      document.data = req.body.data;
+      document.metadata.version += 1;
+    }
     await document.save();
     const broadcast = req.app.get('broadcast');
     broadcast('data-update', { documentId: document.documentId, data: document.data });
@@ -49,3 +58,4 @@ router.post('/:id/update', async (req, res) => {
 });
 
 module.exports = router;
+

@@ -1,2 +1,0 @@
-﻿# Placeholder file for icon-80.png
-# In production, replace with actual 80x80 PNG icon

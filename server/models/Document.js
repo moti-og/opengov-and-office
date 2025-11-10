@@ -1,4 +1,4 @@
-﻿const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 
 const documentSchema = new mongoose.Schema({
   documentId: { type: String, required: true, unique: true },
@@ -18,3 +18,4 @@ documentSchema.pre('save', function(next) {
 });
 
 module.exports = mongoose.model('Document', documentSchema);
+

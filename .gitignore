@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment
+.env
+.env.local
+
+# Build output
+dist/
+build/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Office Add-in
+*.OfficeAddin
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Testing
+coverage/
+
+# Temporary
+*.tmp
+*.temp
+.cache/
+
+# Excel temporary
+~$*.xlsx
+~$*.xls
+
+# SSL Certificates
+*.crt
+*.key
+*.pem
