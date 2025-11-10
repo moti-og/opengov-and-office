@@ -234,19 +234,11 @@ function loadDataIntoLuckysheet(data, skipInitFlag = false) {
         return;
     }
 
-    // Only set initializing flag if not skipped (for SSE updates)
-    if (!skipInitFlag) {
-        isInitializing = true;
-    }
-    
-    // Clear the sheet first
-    try {
-        luckysheet.clearSheet(0);
-    } catch (e) {
-        console.warn('Clear sheet error:', e);
-    }
+    // ALWAYS block syncs while loading data to prevent infinite loops
+    isInitializing = true;
+    console.log('Loading data, setting isInitializing = true');
 
-    // Set cell values directly
+    // Set cell values directly (no clearSheet - it doesn't exist)
     let cellsSet = 0;
     for (let r = 0; r < data.length; r++) {
         const row = data[r];
@@ -280,12 +272,11 @@ function loadDataIntoLuckysheet(data, skipInitFlag = false) {
         console.warn('Refresh error:', e);
     }
     
-    if (!skipInitFlag) {
-        setTimeout(() => {
-            isInitializing = false;
-            console.log('isInitializing set to false');
-        }, 500);
-    }
+    // Re-enable syncs after a short delay (let all cellUpdated hooks finish firing)
+    setTimeout(() => {
+        isInitializing = false;
+        console.log('Data loading complete, isInitializing = false');
+    }, 1000);
 }
 
 function extractLayout() {
