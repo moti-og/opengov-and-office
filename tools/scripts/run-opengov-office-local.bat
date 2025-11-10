@@ -1,6 +1,6 @@
 @echo off
 REM OpenGov Office - Server Management Script
-REM Usage: run-local.bat [start|stop|restart|status]
+REM Usage: run-opengov-office-local.bat [start|stop|restart|status]
 REM Double-click to start servers automatically
 
 setlocal
@@ -16,7 +16,7 @@ if /I "%ACTION%"=="restart" goto :restart
 if /I "%ACTION%"=="status" goto :status
 
 echo Unknown action: %ACTION%
-echo Usage: servers.bat [start^|stop^|restart^|status]
+echo Usage: run-opengov-office-local.bat [start^|stop^|restart^|status]
 exit /b 1
 
 :start
