@@ -1,38 +1,14 @@
 @echo off
 REM OpenGov Office - Server Management Script
 REM Usage: run-local.bat [start|stop|restart|status]
+REM Double-click to start servers automatically
 
 setlocal
 
 set ACTION=%1
 
-if "%ACTION%"=="" (
-    echo.
-    echo ========================================
-    echo   OpenGov Office - Server Manager
-    echo ========================================
-    echo.
-    echo Choose an action:
-    echo   1. Start servers
-    echo   2. Stop servers
-    echo   3. Restart servers
-    echo   4. Check status
-    echo   5. Exit
-    echo.
-    set /p CHOICE="Enter choice (1-5): "
-    
-    if "%CHOICE%"=="1" set ACTION=start
-    if "%CHOICE%"=="2" set ACTION=stop
-    if "%CHOICE%"=="3" set ACTION=restart
-    if "%CHOICE%"=="4" set ACTION=status
-    if "%CHOICE%"=="5" exit /b 0
-    
-    if "%ACTION%"=="" (
-        echo Invalid choice!
-        pause
-        exit /b 1
-    )
-)
+REM Default to start if no argument provided
+if "%ACTION%"=="" set ACTION=start
 
 if /I "%ACTION%"=="start" goto :start
 if /I "%ACTION%"=="stop" goto :stop
@@ -96,7 +72,6 @@ call npm stop >nul 2>&1
 echo.
 echo Servers stopped.
 echo.
-pause
 goto :end
 
 :restart
@@ -142,7 +117,6 @@ if "%ERRORLEVEL%"=="0" (
 )
 
 echo.
-pause
 goto :end
 
 :end
