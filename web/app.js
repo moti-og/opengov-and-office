@@ -62,12 +62,22 @@ function initializeLuckysheet(initialData = []) {
                 }, 500);
             },
             cellUpdated: function(r, c, oldValue, newValue, isRefresh) {
-                if (isInitializing || isRefresh) {
-                    console.log('Skipping sync - initializing or refresh');
+                console.log('cellUpdated fired:', {
+                    row: r, 
+                    col: c, 
+                    oldValue: oldValue, 
+                    newValue: newValue, 
+                    isRefresh: isRefresh, 
+                    isInitializing: isInitializing
+                });
+                
+                // Only skip if initializing, ignore isRefresh
+                if (isInitializing) {
+                    console.log('Skipping sync - still initializing');
                     return;
                 }
                 
-                console.log('cellUpdated fired:', r, c, newValue);
+                console.log('Proceeding with sync!');
                 // Debounce sync
                 clearTimeout(window.luckysheetSyncTimeout);
                 window.luckysheetSyncTimeout = setTimeout(() => {
