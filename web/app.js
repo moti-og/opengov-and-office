@@ -143,23 +143,33 @@ function loadDataIntoLuckysheet(data) {
 
     isInitializing = true;
     
-    // Set cell values directly without clearing (to avoid issues)
+    // Set cell values directly
     for (let r = 0; r < data.length; r++) {
         for (let c = 0; c < (data[r] ? data[r].length : 0); c++) {
             const value = data[r][c];
             if (value !== null && value !== undefined && value !== '') {
-                // Use setCellValue with all required params to avoid undefined issues
-                luckysheet.setCellValue(r, c, {
-                    v: value,
-                    m: value
-                });
+                try {
+                    luckysheet.setCellValue(r, c, {
+                        v: value,
+                        m: value
+                    });
+                } catch (e) {
+                    console.warn('Error setting cell', r, c, e);
+                }
             }
         }
     }
     
+    // Force a refresh
+    try {
+        luckysheet.refresh();
+    } catch (e) {
+        console.warn('Refresh error:', e);
+    }
+    
     setTimeout(() => {
         isInitializing = false;
-    }, 1000);
+    }, 500);
 }
 
 async function syncToServer() {
@@ -233,27 +243,29 @@ async function initializeWithData() {
     updateStatus('Connecting...', false);
     
     try {
-        // Fetch data from server
+        // Initialize Luckysheet FIRST with empty data
+        initializeLuckysheet([]);
+        
+        // Wait for Luckysheet to fully render
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // THEN fetch and load data
         const response = await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}`);
         
-        let initialData = [];
         if (response.ok) {
             const doc = await response.json();
             if (doc && doc.data && doc.data.length) {
-                initialData = arrayToLuckysheet(doc.data);
+                loadDataIntoLuckysheet(doc.data);
                 lastSyncedData = doc.data;
             }
         }
         
-        // Initialize Luckysheet with the data
-        initializeLuckysheet(initialData);
-        
-        // Wait for Luckysheet to fully render
+        // Setup SSE after everything is loaded
         setTimeout(() => {
             isInitializing = false;
             setupSSE();
             updateStatus('✓ Live sync active', true);
-        }, 1500);
+        }, 500);
         
     } catch (error) {
         console.error('Initialization error:', error);
