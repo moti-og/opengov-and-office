@@ -17,49 +17,34 @@ if %ERRORLEVEL% EQU 0 (
 )
 timeout /t 2 /nobreak >nul
 
-REM Find and remove EXCEL-ONLY OpenGov add-ins
+REM Remove OpenGov Excel add-ins by known registry keys
 echo.
-echo [2/3] Finding and removing OpenGov EXCEL add-ins...
+echo [2/3] Removing OpenGov EXCEL add-ins...
 echo.
 
-REM Check Office 16.0
-for /f "tokens=2*" %%a in ('reg query "HKCU\Software\Microsoft\Office\16.0\WEF\Developer" 2^>nul ^| findstr /i /r "REG_SZ.*opengov"') do (
-    set "MANIFEST_PATH=%%b"
-    setlocal enabledelayedexpansion
-    if exist "!MANIFEST_PATH!" (
-        findstr /i /c:"Host Name=\""Workbook\"" "!MANIFEST_PATH!" >nul 2>&1
-        if !ERRORLEVEL! EQU 0 (
-            REM This is an Excel add-in, safe to remove
-            for /f "tokens=1" %%c in ('reg query "HKCU\Software\Microsoft\Office\16.0\WEF\Developer" 2^>nul ^| findstr /i "opengov" ^| findstr /i "!MANIFEST_PATH!"') do (
-                echo Found Excel add-in: %%c
-                reg delete "HKCU\Software\Microsoft\Office\16.0\WEF\Developer" /v "%%c" /f >nul 2>&1
-                echo    ^> Removed ✓
-            )
-        ) else (
-            echo Skipping non-Excel add-in: !MANIFEST_PATH!
-        )
-    )
-    endlocal
+REM Remove local version
+echo Checking for local version...
+reg delete "HKCU\Software\Microsoft\Office\16.0\WEF\Developer" /v "opengov-excel-addin-local" /f >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    echo    ^> Removed local version ✓
+) else (
+    echo    ^> Local version not found
 )
 
-REM Check Office 15.0
-for /f "tokens=2*" %%a in ('reg query "HKCU\Software\Microsoft\Office\15.0\WEF\Developer" 2^>nul ^| findstr /i /r "REG_SZ.*opengov"') do (
-    set "MANIFEST_PATH=%%b"
-    setlocal enabledelayedexpansion
-    if exist "!MANIFEST_PATH!" (
-        findstr /i /c:"Host Name=\""Workbook\"" "!MANIFEST_PATH!" >nul 2>&1
-        if !ERRORLEVEL! EQU 0 (
-            for /f "tokens=1" %%c in ('reg query "HKCU\Software\Microsoft\Office\15.0\WEF\Developer" 2^>nul ^| findstr /i "opengov" ^| findstr /i "!MANIFEST_PATH!"') do (
-                echo Found Excel add-in: %%c
-                reg delete "HKCU\Software\Microsoft\Office\15.0\WEF\Developer" /v "%%c" /f >nul 2>&1
-                echo    ^> Removed ✓
-            )
-        )
-    )
-    endlocal
+REM Remove production version
+echo Checking for production version...
+reg delete "HKCU\Software\Microsoft\Office\16.0\WEF\Developer" /v "opengov-excel-addin-prod" /f >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    echo    ^> Removed production version ✓
+) else (
+    echo    ^> Production version not found
 )
 
-echo Done checking registry
+REM Also check Office 15.0
+reg delete "HKCU\Software\Microsoft\Office\15.0\WEF\Developer" /v "opengov-excel-addin-local" /f >nul 2>&1
+reg delete "HKCU\Software\Microsoft\Office\15.0\WEF\Developer" /v "opengov-excel-addin-prod" /f >nul 2>&1
+
+echo Done
 
 echo.
 echo [3/3] Cleaning up files and cache...
