@@ -311,20 +311,40 @@ async function sync() {
 function applyUpdate(data) {
     if (isUpdating) return;
     
-    // Don't re-render if user is actively editing a cell (prevent cursor loss)
-    const activeElement = document.activeElement;
-    if (activeElement && activeElement.tagName === 'TD' && activeElement.isContentEditable) {
-        console.log('Skipping re-render: user is editing a cell');
-        // Still update the data, just don't re-render
-        currentData = JSON.parse(JSON.stringify(data));
-        return;
-    }
-    
     console.log('Applying update from Excel:', data.length, 'rows');
     isUpdating = true;
     
     currentData = JSON.parse(JSON.stringify(data)); // Deep clone
-    renderTable(currentData);
+    
+    // Don't re-render if user is actively editing a cell (prevent cursor loss)
+    const activeElement = document.activeElement;
+    const isEditingCell = activeElement && activeElement.tagName === 'TD' && activeElement.isContentEditable;
+    
+    if (isEditingCell) {
+        console.log('User is editing a cell - updating cells in place without re-render');
+        // Update all cells except the one being edited
+        const editingRow = parseInt(activeElement.dataset.row);
+        const editingCol = parseInt(activeElement.dataset.col);
+        
+        document.querySelectorAll('td[contenteditable]').forEach(cell => {
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            
+            // Skip the cell being edited
+            if (row === editingRow && col === editingCol) {
+                return;
+            }
+            
+            // Update the cell value
+            const value = currentData[row]?.[col] || '';
+            if (cell.textContent !== value) {
+                cell.textContent = value;
+            }
+        });
+    } else {
+        // No active editing, safe to re-render
+        renderTable(currentData);
+    }
     
     updateStatus('✓ Updated from Excel', true);
     
