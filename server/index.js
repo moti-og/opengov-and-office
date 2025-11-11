@@ -21,13 +21,27 @@ app.get('/manifest.xml', (req, res) => {
   const manifestPath = path.join(__dirname, '..', 'manifest.xml');
   console.log('Manifest requested. Path:', manifestPath);
   console.log('File exists:', require('fs').existsSync(manifestPath));
-  res.sendFile(manifestPath);
+  res.sendFile(manifestPath, (err) => {
+    if (err) {
+      console.error('Error sending manifest:', err);
+      res.status(500).send('Error serving manifest');
+    } else {
+      console.log('Manifest sent successfully');
+    }
+  });
 });
 app.get('/manifest-local.xml', (req, res) => {
   const manifestPath = path.join(__dirname, '..', 'manifest-local.xml');
   console.log('Local manifest requested. Path:', manifestPath);
   console.log('File exists:', require('fs').existsSync(manifestPath));
-  res.sendFile(manifestPath);
+  res.sendFile(manifestPath, (err) => {
+    if (err) {
+      console.error('Error sending local manifest:', err);
+      res.status(500).send('Error serving manifest');
+    } else {
+      console.log('Local manifest sent successfully');
+    }
+  });
 });
 
 // Serve installer files from tools/scripts

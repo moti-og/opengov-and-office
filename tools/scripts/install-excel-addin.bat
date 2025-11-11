@@ -22,7 +22,7 @@ REM Download manifest to temp location
 echo Downloading manifest...
 set TEMP_DIR=%TEMP%\opengov-excel-addin
 if not exist "%TEMP_DIR%" mkdir "%TEMP_DIR%"
-powershell -Command "Invoke-WebRequest -Uri 'https://opengov-office.onrender.com/manifest.xml' -OutFile '%TEMP_DIR%\manifest.xml'"
+powershell -Command "Invoke-WebRequest -Uri 'https://opengov-and-office.onrender.com/manifest.xml' -OutFile '%TEMP_DIR%\manifest.xml'"
 
 REM Register manifest via Developer registry key
 echo Registering add-in...
@@ -63,7 +63,7 @@ echo.
 echo The add-in panel will appear on the right side.
 echo After this first activation, it will remember your choice.
 echo.
-echo You can now open: https://opengov-office.onrender.com
+echo You can now open: https://opengov-and-office.onrender.com
 echo to see real-time sync between Excel and the web!
 echo.
 
