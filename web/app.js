@@ -1,4 +1,7 @@
-const SERVER_URL = 'http://localhost:3001';
+// Auto-detect server URL (production vs local)
+const SERVER_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:3001' 
+    : window.location.origin;
 const DOCUMENT_ID = 'excel-demo-doc';
 
 let eventSource = null;
