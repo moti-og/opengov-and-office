@@ -90,15 +90,9 @@ function setupModalHandlers() {
 function renderTable(data) {
     const container = document.getElementById('spreadsheet');
     
-    // Always show at least a 20x10 grid
-    const minRows = 20;
-    const minCols = 10;
-    
-    // Determine grid size
-    const dataRows = data?.length || 0;
-    const dataCols = dataRows > 0 ? Math.max(...data.map(row => row.length || 0)) : 0;
-    const numRows = Math.max(minRows, dataRows);
-    const numCols = Math.max(minCols, dataCols);
+    // Fixed 50x50 grid (persistent regardless of data)
+    const numRows = 50;
+    const numCols = 50;
     
     let html = '<table class="data-table"><thead><tr>';
     
