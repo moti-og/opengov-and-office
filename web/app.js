@@ -2,498 +2,406 @@ const SERVER_URL = 'http://localhost:3001';
 const DOCUMENT_ID = 'excel-demo-doc';
 
 let eventSource = null;
-let isConnected = false;
-let lastSyncedData = null;
-let isInitializing = true;
-let luckysheetInstance = null;
+let isUpdating = false;
+let currentData = [];
+let syncQueue = [];
+let syncInProgress = false;
 
-// Initialize on load
-document.addEventListener('DOMContentLoaded', () => {
-    // Fetch data first, then initialize Luckysheet with it
-    initializeWithData();
-});
+document.addEventListener('DOMContentLoaded', init);
 
-function updateStatus(text, connected = null) {
-    const dot = document.getElementById('syncDot');
-    const label = document.getElementById('syncLabel');
-    label.textContent = text;
-
-    if (connected !== null) {
-        isConnected = connected;
-        dot.className = 'dot ' + (connected ? 'connected' : 'disconnected');
-    }
+function updateStatus(text, connected) {
+    document.getElementById('syncLabel').textContent = text;
+    document.getElementById('syncDot').className = 'dot ' + (connected ? 'connected' : 'disconnected');
 }
 
-function initializeLuckysheet(initialData = [], initialLayout = null) {
-    console.log('=== initializeLuckysheet called ===');
-    console.log('initialData length:', initialData.length);
-    console.log('initialData:', initialData);
-    console.log('initialLayout:', initialLayout);
+function setupModalHandlers() {
+    // Budget Book Modal
+    const modal = document.getElementById('modal');
+    const updateBudgetBtn = document.getElementById('updateBudgetBtn');
+    const closeBtn = document.querySelector('.close');
     
-    const config = {};
+    // Install Add-in Modal
+    const installModal = document.getElementById('installModal');
+    const installAddinBtn = document.getElementById('installAddinBtn');
+    const closeInstallBtn = document.querySelector('.close-install');
     
-    // Apply column widths if provided
-    if (initialLayout && initialLayout.columnWidths && initialLayout.columnWidths.length > 0) {
-        config.columnlen = {};
-        initialLayout.columnWidths.forEach((width, index) => {
-            config.columnlen[index] = width;
-        });
+    // Detect if running locally and update download links
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const windowsDownload = document.getElementById('windowsDownload');
+    const macDownload = document.getElementById('macDownload');
+    
+    if (windowsDownload && macDownload) {
+        if (isLocal) {
+            windowsDownload.href = '/install-excel-addin-local.bat';
+            macDownload.href = '/install-excel-addin-local.sh';
+            console.log('🏠 Local development detected - using local installer files');
+        } else {
+            windowsDownload.href = '/install-excel-addin.bat';
+            macDownload.href = '/install-excel-addin.sh';
+            console.log('🌐 Production environment detected - using production installer files');
+        }
     }
     
-    // Apply row heights if provided
-    if (initialLayout && initialLayout.rowHeights && initialLayout.rowHeights.length > 0) {
-        config.rowlen = {};
-        initialLayout.rowHeights.forEach((height, index) => {
-            config.rowlen[index] = height;
-        });
+    // Open budget modal when button clicked
+    if (updateBudgetBtn) {
+        updateBudgetBtn.onclick = () => {
+            modal.style.display = 'block';
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 3000); // Auto-close after 3 seconds
+        };
     }
     
-    const options = {
-        container: 'luckysheet',
-        title: 'OpenGov Office Sync',
-        lang: 'en',
-        showinfobar: false,
-        showsheetbar: false,
-        showstatisticBar: false,
-        showConfigWindowResize: false,
-        enableAddRow: true,
-        enableAddCol: true,
-        userInfo: false,
-        myFolderUrl: false,
-        data: [{
-            name: "Sheet1",
-            color: "",
-            status: "1",
-            order: "0",
-            celldata: initialData,  // Use celldata for the array format [{r, c, v}]
-            config: config,
-            index: 0
-        }],
-        hook: {
-            cellEditAfter: function(r, c, oldValue, newValue) {
-                if (isInitializing) {
-                    console.log('Skipping sync - initializing');
-                    return;
-                }
-                
-                console.log('cellEditAfter fired:', r, c, 'old:', oldValue, 'new:', newValue);
-                // Debounce sync
-                clearTimeout(window.luckysheetSyncTimeout);
-                window.luckysheetSyncTimeout = setTimeout(() => {
-                    console.log('Syncing to server after cell edit');
-                    syncToServer();
-                }, 500);
-            },
-            cellUpdated: function(r, c, oldValue, newValue, isRefresh) {
-                console.log('cellUpdated fired:', {
-                    row: r, 
-                    col: c, 
-                    oldValue: oldValue, 
-                    newValue: newValue, 
-                    isRefresh: isRefresh, 
-                    isInitializing: isInitializing
-                });
-                
-                // Only skip if initializing, ignore isRefresh
-                if (isInitializing) {
-                    console.log('Skipping sync - still initializing');
-                    return;
-                }
-                
-                console.log('Proceeding with sync!');
-                // Debounce sync
-                clearTimeout(window.luckysheetSyncTimeout);
-                window.luckysheetSyncTimeout = setTimeout(() => {
-                    console.log('Syncing to server after cell update');
-                    syncToServer();
-                }, 500);
-            },
-            rangeEditAfter: function(range, data) {
-                if (isInitializing) {
-                    console.log('Skipping sync - initializing');
-                    return;
-                }
-                
-                console.log('rangeEditAfter fired:', range, data);
-                // Debounce sync
-                clearTimeout(window.luckysheetSyncTimeout);
-                window.luckysheetSyncTimeout = setTimeout(() => {
-                    console.log('Syncing to server after range edit');
-                    syncToServer();
-                }, 500);
-            },
-            columnWidthChangeAfter: function(colIndex, colWidth) {
-                if (isInitializing) {
-                    console.log('Skipping sync - initializing');
-                    return;
-                }
-                
-                console.log('Column width changed:', colIndex, colWidth);
-                // Debounce sync
-                clearTimeout(window.luckysheetLayoutSyncTimeout);
-                window.luckysheetLayoutSyncTimeout = setTimeout(() => {
-                    console.log('Syncing layout to server after column resize');
-                    syncLayoutToServer();
-                }, 500);
-            },
-            rowHeightChangeAfter: function(rowIndex, rowHeight) {
-                if (isInitializing) {
-                    console.log('Skipping sync - initializing');
-                    return;
-                }
-                
-                console.log('Row height changed:', rowIndex, rowHeight);
-                // Debounce sync
-                clearTimeout(window.luckysheetLayoutSyncTimeout);
-                window.luckysheetLayoutSyncTimeout = setTimeout(() => {
-                    console.log('Syncing layout to server after row resize');
-                    syncLayoutToServer();
-                }, 500);
-            }
+    // Close budget modal when X clicked
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            modal.style.display = 'none';
+        };
+    }
+    
+    // Open install modal when button clicked
+    if (installAddinBtn) {
+        installAddinBtn.onclick = () => {
+            installModal.style.display = 'block';
+        };
+    }
+    
+    // Close install modal when X clicked
+    if (closeInstallBtn) {
+        closeInstallBtn.onclick = () => {
+            installModal.style.display = 'none';
+        };
+    }
+    
+    // Close modals when clicking outside
+    window.onclick = (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+        if (event.target === installModal) {
+            installModal.style.display = 'none';
         }
     };
-
-    luckysheet.create(options);
-    luckysheetInstance = luckysheet;
 }
 
-// Convert simple 2D array to Luckysheet celldata format
-function arrayToLuckysheet(arr) {
-    if (!arr || !arr.length) return [];
+function renderTable(data) {
+    const container = document.getElementById('spreadsheet');
     
-    const celldata = [];
-    for (let r = 0; r < arr.length; r++) {
-        for (let c = 0; c < (arr[r] ? arr[r].length : 0); c++) {
-            const cellValue = arr[r][c];
-            if (cellValue !== null && cellValue !== undefined && cellValue !== '') {
-                celldata.push({
-                    r: r,
-                    c: c,
-                    v: String(cellValue) // Just pass the string value directly
-                });
+    // Always show at least a 20x10 grid
+    const minRows = 20;
+    const minCols = 10;
+    
+    // Determine grid size
+    const dataRows = data?.length || 0;
+    const dataCols = dataRows > 0 ? Math.max(...data.map(row => row.length || 0)) : 0;
+    const numRows = Math.max(minRows, dataRows);
+    const numCols = Math.max(minCols, dataCols);
+    
+    let html = '<table class="data-table"><thead><tr>';
+    
+    // Empty corner cell
+    html += '<th class="row-header"></th>';
+    
+    // Column headers (A, B, C, etc.)
+    for (let c = 0; c < numCols; c++) {
+        html += `<th>${String.fromCharCode(65 + c)}</th>`;
+    }
+    html += '</tr></thead><tbody>';
+    
+    // Data rows
+    for (let r = 0; r < numRows; r++) {
+        html += '<tr>';
+        // Row number
+        html += `<th class="row-header">${r + 1}</th>`;
+        // Data cells
+        for (let c = 0; c < numCols; c++) {
+            const value = data?.[r]?.[c] || '';
+            html += `<td contenteditable="true" data-row="${r}" data-col="${c}" tabindex="0">${escapeHtml(value)}</td>`;
+        }
+        html += '</tr>';
+    }
+    
+    html += '</tbody></table>';
+    container.innerHTML = html;
+    
+    // Add event listeners to cells
+    container.querySelectorAll('td[contenteditable]').forEach(cell => {
+        cell.addEventListener('blur', handleCellEdit);
+        cell.addEventListener('keydown', handleCellKeydown);
+    });
+}
+
+function handleCellKeydown(e) {
+    const cell = e.target;
+    const row = parseInt(cell.dataset.row);
+    const col = parseInt(cell.dataset.col);
+    
+    // Enter key - move down or blur
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const nextCell = document.querySelector(`td[data-row="${row + 1}"][data-col="${col}"]`);
+        if (nextCell) {
+            nextCell.focus();
+        } else {
+            cell.blur();
+        }
+        return;
+    }
+    
+    // Arrow key navigation
+    let targetRow = row;
+    let targetCol = col;
+    
+    switch(e.key) {
+        case 'ArrowUp':
+            e.preventDefault();
+            targetRow = Math.max(0, row - 1);
+            break;
+        case 'ArrowDown':
+            e.preventDefault();
+            targetRow = row + 1;
+            break;
+        case 'ArrowLeft':
+            // Only navigate if cursor is at the start
+            if (window.getSelection().toString().length === 0 && 
+                cell.selectionStart === 0) {
+                e.preventDefault();
+                targetCol = Math.max(0, col - 1);
+            } else {
+                return;
+            }
+            break;
+        case 'ArrowRight':
+            // Only navigate if cursor is at the end
+            if (window.getSelection().toString().length === 0 && 
+                cell.selectionStart === cell.textContent.length) {
+                e.preventDefault();
+                targetCol = col + 1;
+            } else {
+                return;
+            }
+            break;
+        case 'Tab':
+            e.preventDefault();
+            if (e.shiftKey) {
+                targetCol = Math.max(0, col - 1);
+            } else {
+                targetCol = col + 1;
+            }
+            break;
+        default:
+            return;
+    }
+    
+    // Move to target cell
+    if (targetRow !== row || targetCol !== col) {
+        const targetCell = document.querySelector(`td[data-row="${targetRow}"][data-col="${targetCol}"]`);
+        if (targetCell) {
+            targetCell.focus();
+            // Select all content in the cell
+            const range = document.createRange();
+            range.selectNodeContents(targetCell);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+    }
+}
+
+function handleCellEdit(e) {
+    if (isUpdating) return;
+    
+    const row = parseInt(e.target.dataset.row);
+    const col = parseInt(e.target.dataset.col);
+    const newValue = e.target.textContent.trim();
+    
+    // Update current data immediately
+    if (!currentData[row]) currentData[row] = [];
+    currentData[row][col] = newValue;
+    
+    console.log(`Cell [${row},${col}] changed to: "${newValue}"`);
+    
+    // Queue sync immediately - queue handles batching
+    queueSync();
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function readDataFromTable() {
+    const data = [];
+    let maxRow = -1, maxCol = -1;
+    
+    // Find actual data bounds
+    for (let r = 0; r < currentData.length; r++) {
+        if (currentData[r]) {
+            for (let c = 0; c < currentData[r].length; c++) {
+                if (currentData[r][c]) {
+                    maxRow = Math.max(maxRow, r);
+                    maxCol = Math.max(maxCol, c);
+                }
             }
         }
     }
-    return celldata;
-}
-
-// Convert Luckysheet format back to simple 2D array
-function luckysheetToArray() {
-    const sheetData = luckysheet.getSheetData();
-    if (!sheetData || !sheetData.length) return [];
     
-    // Find max row and col with actual data
-    let maxRow = -1;
-    let maxCol = -1;
+    if (maxRow === -1) return [];
     
-    sheetData.forEach((row, rowIndex) => {
-        if (row) {
-            row.forEach((cell, colIndex) => {
-                if (cell !== null && cell !== undefined) {
-                    // Check if cell has a value
-                    const value = typeof cell === 'object' ? cell.v : cell;
-                    if (value !== null && value !== undefined && value !== '') {
-                        maxRow = Math.max(maxRow, rowIndex);
-                        maxCol = Math.max(maxCol, colIndex);
-                    }
-                }
-            });
-        }
-    });
-    
-    // If no data, return empty array
-    if (maxRow === -1 || maxCol === -1) return [];
-    
-    // Build 2D array
-    const result = [];
+    // Build clean data array
     for (let r = 0; r <= maxRow; r++) {
         const row = [];
         for (let c = 0; c <= maxCol; c++) {
-            const cell = sheetData[r] && sheetData[r][c];
-            let value = '';
-            
-            if (cell !== null && cell !== undefined) {
-                if (typeof cell === 'object' && cell.v !== undefined) {
-                    value = String(cell.v);
-                } else if (typeof cell === 'string' || typeof cell === 'number') {
-                    value = String(cell);
-                }
-            }
-            
-            row.push(value);
+            row.push(currentData[r]?.[c] || '');
         }
-        result.push(row);
+        data.push(row);
     }
     
-    return result;
+    return data;
 }
 
-function loadDataIntoLuckysheet(data, skipInitFlag = false) {
-    if (!data || !data.length) {
-        updateStatus('✓ Connected (no data)', true);
-        return;
-    }
-
-    // ALWAYS block syncs while loading data to prevent infinite loops
-    isInitializing = true;
-    console.log('Loading data, setting isInitializing = true');
-
-    // Set cell values directly (no clearSheet - it doesn't exist)
-    let cellsSet = 0;
-    for (let r = 0; r < data.length; r++) {
-        const row = data[r];
-        if (!row || !Array.isArray(row)) continue; // Skip invalid rows
-        
-        for (let c = 0; c < row.length; c++) {
-            const value = row[c];
-            // Skip null, undefined, and empty string values
-            if (value === null || value === undefined || value === '') {
-                continue;
-            }
-            
-            try {
-                luckysheet.setCellValue(r, c, {
-                    v: String(value), // Ensure it's a string
-                    m: String(value)
-                });
-                cellsSet++;
-            } catch (e) {
-                console.warn(`Skipping cell (${r}, ${c}):`, e.message);
-            }
-        }
-    }
+function queueSync() {
+    const data = readDataFromTable();
+    syncQueue.push(data);
     
-    console.log(`Set ${cellsSet} cells from ${data.length} rows`);
+    // Debounce the queue processing, not individual edits
+    clearTimeout(window.queueTimeout);
+    window.queueTimeout = setTimeout(processQueue, 400);
+}
+
+async function processQueue() {
+    if (syncInProgress || syncQueue.length === 0) return;
     
-    // Force a refresh after setting data
+    syncInProgress = true;
+    const data = syncQueue[syncQueue.length - 1]; // Take latest
+    syncQueue = []; // Clear queue (we're sending the latest state)
+    
     try {
-        luckysheet.refresh();
-    } catch (e) {
-        console.warn('Refresh error:', e);
-    }
-    
-    // Re-enable syncs after a short delay (let all cellUpdated hooks finish firing)
-    setTimeout(() => {
-        isInitializing = false;
-        console.log('Data loading complete, isInitializing = false');
-    }, 1000);
-}
-
-function extractLayout() {
-    const config = luckysheet.getConfig();
-    const columnWidths = [];
-    const rowHeights = [];
-    
-    // Extract column widths
-    if (config && config.columnlen) {
-        const maxCol = Math.max(...Object.keys(config.columnlen).map(Number));
-        for (let i = 0; i <= maxCol; i++) {
-            columnWidths.push(config.columnlen[i] || 73); // Default width
-        }
-    }
-    
-    // Extract row heights
-    if (config && config.rowlen) {
-        const maxRow = Math.max(...Object.keys(config.rowlen).map(Number));
-        for (let i = 0; i <= maxRow; i++) {
-            rowHeights.push(config.rowlen[i] || 19); // Default height
-        }
-    }
-    
-    return { columnWidths, rowHeights };
-}
-
-function applyLayoutToLuckysheet(layout) {
-    if (!layout) return;
-    
-    console.log('Applying layout to Luckysheet:', layout);
-    
-    // Get current sheet dimensions to avoid applying layout to non-existent rows/cols
-    const sheetData = luckysheet.getSheetData();
-    if (!sheetData || !sheetData.length) {
-        console.log('Sheet is empty, skipping layout application');
-        return;
-    }
-    
-    const maxRow = sheetData.length;
-    const maxCol = sheetData[0] ? sheetData[0].length : 0;
-    
-    console.log(`Sheet has ${maxRow} rows, ${maxCol} cols`);
-    
-    // Apply column widths (only up to maxCol)
-    if (layout.columnWidths && layout.columnWidths.length > 0) {
-        for (let index = 0; index < Math.min(layout.columnWidths.length, maxCol); index++) {
-            const width = layout.columnWidths[index];
-            if (width && width > 0) {
-                try {
-                    luckysheet.setColumnWidth(index, width);
-                } catch (e) {
-                    // Silently ignore
-                }
-            }
-        }
-    }
-    
-    // Apply row heights (only up to maxRow)
-    if (layout.rowHeights && layout.rowHeights.length > 0) {
-        for (let index = 0; index < Math.min(layout.rowHeights.length, maxRow); index++) {
-            const height = layout.rowHeights[index];
-            if (height && height > 0) {
-                try {
-                    luckysheet.setRowHeight(index, height);
-                } catch (e) {
-                    // Silently ignore
-                }
-            }
-        }
-    }
-    
-    console.log(`Applied layout to ${maxRow} rows, ${maxCol} cols`);
-}
-
-async function syncToServer() {
-    try {
-        const gridData = luckysheetToArray();
-        
-        // Don't sync if data hasn't changed
-        if (JSON.stringify(gridData) === JSON.stringify(lastSyncedData)) {
-            return;
-        }
-
+        console.log('Syncing to server:', data.length, 'rows');
         const response = await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}/update`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                data: gridData,
-                title: 'Excel Demo',
-                type: 'web'
-            })
+            body: JSON.stringify({ data, title: 'Excel Demo', type: 'web' })
         });
-
-        if (response.ok) {
-            lastSyncedData = JSON.parse(JSON.stringify(gridData));
-            updateStatus('✓ Synced', true);
+        
+        if (!response.ok) {
+            console.error('Sync failed:', response.status);
+            updateStatus('Sync failed', false);
+            syncInProgress = false;
+            return;
         }
+        
+        updateStatus('✓ Synced', true);
     } catch (error) {
         console.error('Sync error:', error);
         updateStatus('Sync failed', false);
     }
-}
-
-async function syncLayoutToServer() {
-    try {
-        const layout = extractLayout();
-        
-        console.log('Syncing layout:', layout);
-
-        const response = await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}/update`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                layout: layout,
-                title: 'Excel Demo',
-                type: 'web'
-            })
-        });
-
-        if (response.ok) {
-            updateStatus('✓ Layout synced', true);
-        }
-    } catch (error) {
-        console.error('Layout sync error:', error);
-        updateStatus('Layout sync failed', false);
+    
+    syncInProgress = false;
+    
+    // Process next item if queue filled up while we were syncing
+    if (syncQueue.length > 0) {
+        setTimeout(processQueue, 100);
     }
 }
+
+// Legacy sync function for manual sync button
+async function sync() {
+    queueSync();
+}
+
+function applyUpdate(data) {
+    if (isUpdating) return;
+    
+    console.log('Applying update from Excel:', data.length, 'rows');
+    isUpdating = true;
+    
+    currentData = JSON.parse(JSON.stringify(data)); // Deep clone
+    renderTable(currentData);
+    
+    updateStatus('✓ Updated from Excel', true);
+    
+    setTimeout(() => { isUpdating = false; }, 2000);
+}
+
+let reconnectAttempts = 0;
 
 function setupSSE() {
     if (eventSource) {
-        eventSource.close();
+        try { eventSource.close(); } catch(e) {}
     }
-
+    
     eventSource = new EventSource(`${SERVER_URL}/api/stream`);
-
-    eventSource.addEventListener('message', (event) => {
-        try {
-            const payload = JSON.parse(event.data);
-            if (payload.type === 'data-update' && payload.documentId === DOCUMENT_ID) {
-                // Don't update if data is same
-                if (JSON.stringify(payload.data) === JSON.stringify(lastSyncedData)) {
-                    return;
-                }
-                
-                console.log('Received update from Excel');
-                loadDataIntoLuckysheet(payload.data, true); // Skip init flag for SSE updates
-                
-                // Apply layout if provided
-                if (payload.layout) {
-                    applyLayoutToLuckysheet(payload.layout);
-                }
-                
-                lastSyncedData = payload.data;
-                updateStatus('✓ Updated from Excel', true);
-            }
-        } catch (error) {
-            console.error('SSE error:', error);
+    
+    eventSource.addEventListener('message', (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'data-update' && msg.documentId === DOCUMENT_ID) {
+            applyUpdate(msg.data);
         }
     });
-
-    eventSource.onopen = () => {
-        console.log('SSE connected');
-        updateStatus('✓ Live sync active', true);
-    };
-
-    eventSource.onerror = (error) => {
-        console.error('SSE connection error:', error);
-        updateStatus('Reconnecting...', false);
-        eventSource.close();
-        setTimeout(setupSSE, 5000);
-    };
-}
-async function initializeWithData() {
-    updateStatus('Connecting...', false);
     
-    try {
-        // FIRST fetch data and layout
-        const response = await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}`);
+    eventSource.onopen = () => {
+        reconnectAttempts = 0;
+        updateStatus('✓ Live sync', true);
+    };
+    
+    eventSource.onerror = () => {
+        eventSource.close();
+        reconnectAttempts++;
         
-        let initialData = [];
-        let initialLayout = null;
-        
-        console.log('Fetch response status:', response.status);
-        
-        if (response.ok) {
-            const doc = await response.json();
-            console.log('Fetched document:', doc);
-            if (doc && doc.data && doc.data.length) {
-                initialData = arrayToLuckysheet(doc.data);
-                initialLayout = doc.layout;
-                lastSyncedData = doc.data;
-                console.log('Converted to Luckysheet format:', initialData.length, 'cells');
-            } else {
-                console.log('No data in document, initializing empty sheet');
-            }
-        } else {
-            console.log('Document not found, initializing empty sheet');
+        if (reconnectAttempts > 5) {
+            updateStatus('Server offline', false);
+            return;
         }
         
-        console.log('Initializing Luckysheet with', initialData.length, 'cells');
-        // Initialize Luckysheet with data AND layout
-        initializeLuckysheet(initialData, initialLayout);
-        
-        // Wait for Luckysheet to fully render
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Setup SSE after everything is loaded
-        isInitializing = false;
-        console.log('Initialization complete - isInitializing now false');
-        setupSSE();
-        updateStatus('✓ Live sync active', true);
-        
-    } catch (error) {
-        console.error('Initialization error:', error);
-        updateStatus('Connection failed', false);
-        // Initialize empty on error
-        initializeLuckysheet([], null);
-    }
+        updateStatus(`Reconnecting (${reconnectAttempts}/5)...`, false);
+        setTimeout(setupSSE, 5000 * reconnectAttempts);
+    };
 }
 
+async function init() {
+    updateStatus('Connecting...', false);
+    isUpdating = true;
+    
+    setupModalHandlers();
+    
+    // Manual sync button
+    const btn = document.getElementById('manualSyncBtn');
+    if (btn) {
+        btn.onclick = async () => {
+            console.log('Manual sync triggered');
+            await sync();
+        };
+    }
+    
+    try {
+        const res = await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}`, {
+            headers: { 'Cache-Control': 'no-cache' }
+        });
+        
+        if (res.ok) {
+            const doc = await res.json();
+            if (doc?.data?.length) {
+                currentData = JSON.parse(JSON.stringify(doc.data));
+                console.log('Loaded data from server:', currentData.length, 'rows');
+            } else {
+                console.log('No data on server');
+                currentData = [];
+            }
+        }
+    } catch (e) {
+        console.error('Failed to load initial data:', e);
+        updateStatus('Server offline', false);
+        currentData = [];
+    }
+    
+    renderTable(currentData);
+    
+    console.log('Setting up SSE');
+    await new Promise(r => setTimeout(r, 1000));
+    
+    setupSSE();
+    isUpdating = false;
+    console.log('Ready');
+}

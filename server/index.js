@@ -12,8 +12,19 @@ app.use(express.json());
 
 // Serve web interface at root
 app.use(express.static(path.join(__dirname, '..', 'web')));
-// Serve node_modules for Luckysheet
-app.use('/node_modules', express.static(path.join(__dirname, '..', 'node_modules')));
+// Serve installer files from tools/scripts
+const scriptsPath = path.join(__dirname, '..', 'tools', 'scripts');
+app.get('/install-excel-addin.bat', (req, res) => res.sendFile(path.join(scriptsPath, 'install-excel-addin.bat')));
+app.get('/install-excel-addin.sh', (req, res) => res.sendFile(path.join(scriptsPath, 'install-excel-addin.sh')));
+app.get('/install-excel-addin-local.bat', (req, res) => res.sendFile(path.join(scriptsPath, 'install-excel-addin-local.bat')));
+app.get('/install-excel-addin-local.sh', (req, res) => res.sendFile(path.join(scriptsPath, 'install-excel-addin-local.sh')));
+app.get('/uninstall-excel-addin.bat', (req, res) => res.sendFile(path.join(scriptsPath, 'uninstall-excel-addin.bat')));
+app.get('/uninstall-excel-addin.sh', (req, res) => res.sendFile(path.join(scriptsPath, 'uninstall-excel-addin.sh')));
+// Serve manifests
+app.use('/manifest.xml', express.static(path.join(__dirname, '..', 'manifest.xml')));
+app.use('/manifest-local.xml', express.static(path.join(__dirname, '..', 'manifest-local.xml')));
+// Serve addin folder
+app.use('/addin', express.static(path.join(__dirname, '..', 'addin')));
 
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/opengov-office')
   .then(() => console.log('✓ Connected to MongoDB'))

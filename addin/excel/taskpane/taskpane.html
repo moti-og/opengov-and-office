@@ -18,9 +18,22 @@
         </div>
         
         <button id="manualSyncBtn" class="sync-btn">Manual Sync</button>
-        <div class="info">Auto-sync enabled - changes save automatically</div>
         
-        <div id="dataPreview" class="loading">Loading...</div>
+        <div class="budget-book-section">
+            <h2>OpenGov Budget Book</h2>
+            <div class="book-icon">📖</div>
+            <button id="updateBudgetBtn" class="budget-btn">Update my budget book</button>
+        </div>
+    </div>
+    
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="modal-icon">✅</div>
+            <h3>Success!</h3>
+            <p>The sheet contents have been added to your budget book</p>
+        </div>
     </div>
     
     <script src="taskpane.js"></script>
