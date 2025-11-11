@@ -12,6 +12,12 @@ echo Closing Excel if running...
 taskkill /F /IM EXCEL.EXE >nul 2>&1
 timeout /t 2 /nobreak >nul
 
+REM Remove production version if present
+echo Checking for production version...
+reg delete "HKCU\Software\Microsoft\Office\16.0\WEF\Developer" /v "opengov-excel-addin-prod" /f >nul 2>&1
+reg delete "HKCU\Software\Microsoft\Office\15.0\WEF\Developer" /v "opengov-excel-addin-prod" /f >nul 2>&1
+echo    ^> Production version removed (if present)
+
 REM Download manifest from local server
 echo Downloading manifest from localhost:3001...
 set TEMP_DIR=%TEMP%\opengov-excel-addin

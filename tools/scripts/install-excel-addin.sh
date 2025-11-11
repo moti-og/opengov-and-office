@@ -11,6 +11,12 @@ echo ""
 WEF_DIR="$HOME/Library/Containers/com.microsoft.Excel/Data/Documents/wef"
 mkdir -p "$WEF_DIR"
 
+# Remove local version if present
+echo "Checking for local version..."
+rm -f "$WEF_DIR/manifest-local.xml" 2>/dev/null
+echo "   > Local version removed (if present)"
+echo ""
+
 # Download manifest
 echo "Downloading manifest..."
 MANIFEST_URL="https://opengov-office.onrender.com/manifest.xml"

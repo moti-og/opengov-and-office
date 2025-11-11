@@ -16,16 +16,24 @@ sleep 2
 WEF_DIR="$HOME/Library/Containers/com.microsoft.Excel/Data/Documents/wef"
 mkdir -p "$WEF_DIR"
 
-# Copy local manifest
-echo "Setting up local manifest..."
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Remove production version if present
+echo "Checking for production version..."
+rm -f "$WEF_DIR/opengov-office-sync.xml" 2>/dev/null
+echo "   > Production version removed (if present)"
+echo ""
+
+# Download local manifest from server
+echo "Downloading local manifest from localhost:3001..."
+MANIFEST_URL="http://localhost:3001/manifest-local.xml"
 MANIFEST_PATH="$WEF_DIR/opengov-office-sync-local.xml"
 
-cp "$SCRIPT_DIR/manifest-local.xml" "$MANIFEST_PATH"
+curl -L -o "$MANIFEST_PATH" "$MANIFEST_URL"
 
 if [ $? -ne 0 ]; then
   echo ""
-  echo "ERROR: Failed to copy manifest"
+  echo "ERROR: Failed to download manifest from server"
+  echo "Make sure the backend server is running:"
+  echo "  npm run server"
   exit 1
 fi
 
