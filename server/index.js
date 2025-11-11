@@ -10,6 +10,12 @@ const PORT = process.env.SERVER_PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Log ALL requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
 // Serve manifest files (must be before static middleware)
 app.get('/manifest.xml', (req, res) => {
   const manifestPath = path.join(__dirname, '..', 'manifest.xml');
