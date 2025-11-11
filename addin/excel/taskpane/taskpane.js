@@ -1,4 +1,7 @@
-const SERVER_URL = 'http://localhost:3001';
+// Auto-detect server URL based on where the add-in is loaded from
+const SERVER_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:3001' 
+    : 'https://opengov-and-office.onrender.com';
 const DOCUMENT_ID = 'excel-demo-doc';
 
 let eventSource = null;
