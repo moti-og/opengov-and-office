@@ -311,6 +311,15 @@ async function sync() {
 function applyUpdate(data) {
     if (isUpdating) return;
     
+    // Don't re-render if user is actively editing a cell (prevent cursor loss)
+    const activeElement = document.activeElement;
+    if (activeElement && activeElement.tagName === 'TD' && activeElement.isContentEditable) {
+        console.log('Skipping re-render: user is editing a cell');
+        // Still update the data, just don't re-render
+        currentData = JSON.parse(JSON.stringify(data));
+        return;
+    }
+    
     console.log('Applying update from Excel:', data.length, 'rows');
     isUpdating = true;
     
