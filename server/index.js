@@ -12,10 +12,16 @@ app.use(express.json());
 
 // Serve manifest files (must be before static middleware)
 app.get('/manifest.xml', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'manifest.xml'));
+  const manifestPath = path.join(__dirname, '..', 'manifest.xml');
+  console.log('Manifest requested. Path:', manifestPath);
+  console.log('File exists:', require('fs').existsSync(manifestPath));
+  res.sendFile(manifestPath);
 });
 app.get('/manifest-local.xml', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'manifest-local.xml'));
+  const manifestPath = path.join(__dirname, '..', 'manifest-local.xml');
+  console.log('Local manifest requested. Path:', manifestPath);
+  console.log('File exists:', require('fs').existsSync(manifestPath));
+  res.sendFile(manifestPath);
 });
 
 // Serve installer files from tools/scripts
