@@ -29,6 +29,11 @@ function setupModalHandlers() {
     const installAddinBtn = document.getElementById('installAddinBtn');
     const closeInstallBtn = document.querySelector('.close-install');
     
+    // Charts Modal
+    const chartsModal = document.getElementById('chartsModal');
+    const viewChartsBtn = document.getElementById('viewChartsBtn');
+    const closeChartsBtn = document.querySelector('.close-charts');
+    
     // Detect if running locally and update download links
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     const windowsDownload = document.getElementById('windowsDownload');
@@ -77,6 +82,20 @@ function setupModalHandlers() {
         };
     }
     
+    // Open charts modal when button clicked
+    if (viewChartsBtn) {
+        viewChartsBtn.onclick = () => {
+            chartsModal.style.display = 'block';
+        };
+    }
+    
+    // Close charts modal when X clicked
+    if (closeChartsBtn) {
+        closeChartsBtn.onclick = () => {
+            chartsModal.style.display = 'none';
+        };
+    }
+    
     // Close modals when clicking outside
     window.onclick = (event) => {
         if (event.target === modal) {
@@ -84,6 +103,9 @@ function setupModalHandlers() {
         }
         if (event.target === installModal) {
             installModal.style.display = 'none';
+        }
+        if (event.target === chartsModal) {
+            chartsModal.style.display = 'none';
         }
     };
 }
@@ -231,11 +253,20 @@ function escapeHtml(text) {
 
 function renderCharts(charts) {
     const container = document.getElementById('charts-container');
+    const viewChartsBtn = document.getElementById('viewChartsBtn');
+    const chartCount = document.getElementById('chartCount');
+    
     if (!charts || charts.length === 0) {
-        container.innerHTML = '';
+        container.innerHTML = '<p style="text-align: center; color: #666;">No charts to display</p>';
+        viewChartsBtn.style.display = 'none';
         return;
     }
     
+    // Show button and update count
+    viewChartsBtn.style.display = 'block';
+    chartCount.textContent = charts.length;
+    
+    // Render charts in modal
     container.innerHTML = charts.map(chart => `
         <div class="chart">
             <h3>${escapeHtml(chart.name)}</h3>

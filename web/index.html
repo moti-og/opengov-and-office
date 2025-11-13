@@ -20,7 +20,9 @@
                 </div>
             </div>
             <div id="spreadsheet"></div>
-            <div id="charts-container"></div>
+            <button id="viewChartsBtn" class="view-charts-btn" style="display: none;">
+                📊 View Charts (<span id="chartCount">0</span>)
+            </button>
         </div>
         
         <!-- Side Panel (matching Excel add-in) -->
@@ -82,6 +84,16 @@
                     <li>Select "OpenGov Office Sync"</li>
                 </ol>
             </div>
+        </div>
+    </div>
+    
+    <!-- Charts Modal -->
+    <div id="chartsModal" class="modal">
+        <div class="modal-content charts-modal">
+            <span class="close-charts">&times;</span>
+            <div class="modal-icon">📊</div>
+            <h3>Excel Charts</h3>
+            <div id="charts-container"></div>
         </div>
     </div>
 
