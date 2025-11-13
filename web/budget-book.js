@@ -22,8 +22,8 @@ async function checkForUpdates() {
         
         const result = await response.json();
         
-        // If there's new data and the timestamp changed, reload
-        if (result.updatedAt && result.updatedAt !== lastUpdatedAt) {
+        // Only reload if we have a previous timestamp AND it changed
+        if (lastUpdatedAt !== null && result.updatedAt && result.updatedAt !== lastUpdatedAt) {
             console.log('New budget data detected, reloading...');
             await loadBudgetTable();
         }
