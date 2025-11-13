@@ -70,7 +70,8 @@ router.post('/:id/update', async (req, res) => {
       documentId: document.documentId, 
       data: document.data,
       layout: document.layout,
-      charts: document.charts
+      charts: document.charts,
+      sourceType: req.body.type || 'unknown'  // Track where update came from
     });
     res.json(document);
   } catch (error) {

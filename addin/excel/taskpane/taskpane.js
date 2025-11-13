@@ -190,13 +190,7 @@ async function writeData(data) {
     await Excel.run(async (context) => {
         const sheet = context.workbook.worksheets.getActiveWorksheet();
         
-        // Clear existing data first
-        const usedRange = sheet.getUsedRange(true);
-        if (usedRange) {
-            usedRange.clear();
-        }
-        
-        // Write new data
+        // DON'T clear - just update values to preserve formatting
         if (data && data.length > 0) {
             const maxCols = Math.max(...data.map(r => r.length));
             const range = sheet.getRangeByIndexes(0, 0, data.length, maxCols);
@@ -266,9 +260,15 @@ async function sync() {
     await queueSync();
 }
 
-async function applyUpdate(data) {
+async function applyUpdate(data, sourceType) {
     if (isUpdating) {
         console.log('Already updating');
+        return;
+    }
+    
+    // Ignore updates that came from Excel (prevent echo/formatting loss)
+    if (sourceType === 'excel') {
+        console.log('Ignoring update - came from Excel (preventing echo)');
         return;
     }
     
@@ -314,7 +314,7 @@ function setupSSE() {
     eventSource.addEventListener('message', async (e) => {
         const msg = JSON.parse(e.data);
         if (msg.type === 'data-update' && msg.documentId === DOCUMENT_ID) {
-            await applyUpdate(msg.data);
+            await applyUpdate(msg.data, msg.sourceType);
         }
     });
     
