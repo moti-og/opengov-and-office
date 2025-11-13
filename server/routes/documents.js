@@ -43,7 +43,8 @@ router.post('/:id/update', async (req, res) => {
         title: req.body.title || 'Untitled',
         type: req.body.type || 'excel',
         data: req.body.data,
-        layout: req.body.layout || { columnWidths: [], rowHeights: [] }
+        layout: req.body.layout || { columnWidths: [], rowHeights: [] },
+        charts: req.body.charts || []
       });
     } else {
       // Update data if provided
@@ -56,6 +57,11 @@ router.post('/:id/update', async (req, res) => {
         document.layout = req.body.layout;
       }
       
+      // Update charts if provided
+      if (req.body.charts !== undefined) {
+        document.charts = req.body.charts;
+      }
+      
       document.metadata.version += 1;
     }
     await document.save();
@@ -63,7 +69,8 @@ router.post('/:id/update', async (req, res) => {
     broadcast('data-update', { 
       documentId: document.documentId, 
       data: document.data,
-      layout: document.layout
+      layout: document.layout,
+      charts: document.charts
     });
     res.json(document);
   } catch (error) {

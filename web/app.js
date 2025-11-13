@@ -7,6 +7,7 @@ const DOCUMENT_ID = 'excel-demo-doc';
 let eventSource = null;
 let isUpdating = false;
 let currentData = [];
+let currentCharts = [];
 let syncQueue = [];
 let syncInProgress = false;
 
@@ -228,6 +229,21 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function renderCharts(charts) {
+    const container = document.getElementById('charts-container');
+    if (!charts || charts.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    container.innerHTML = charts.map(chart => `
+        <div class="chart">
+            <h3>${escapeHtml(chart.name)}</h3>
+            <img src="${chart.image}" alt="${escapeHtml(chart.name)}" />
+        </div>
+    `).join('');
+}
+
 function readDataFromTable() {
     const data = [];
     let maxRow = -1, maxCol = -1;
@@ -308,13 +324,16 @@ async function sync() {
     queueSync();
 }
 
-function applyUpdate(data) {
+function applyUpdate(data, charts) {
     if (isUpdating) return;
     
-    console.log('Applying update from Excel:', data.length, 'rows');
+    console.log('Applying update from Excel:', data.length, 'rows,', (charts?.length || 0), 'charts');
     isUpdating = true;
     
     currentData = JSON.parse(JSON.stringify(data)); // Deep clone
+    if (charts) {
+        currentCharts = JSON.parse(JSON.stringify(charts));
+    }
     
     // Don't re-render if user is actively editing a cell (prevent cursor loss)
     const activeElement = document.activeElement;
@@ -346,6 +365,9 @@ function applyUpdate(data) {
         renderTable(currentData);
     }
     
+    // Always render charts (they don't interfere with editing)
+    renderCharts(currentCharts);
+    
     updateStatus('✓ Updated from Excel', true);
     
     setTimeout(() => { isUpdating = false; }, 2000);
@@ -363,7 +385,7 @@ function setupSSE() {
     eventSource.addEventListener('message', (e) => {
         const msg = JSON.parse(e.data);
         if (msg.type === 'data-update' && msg.documentId === DOCUMENT_ID) {
-            applyUpdate(msg.data);
+            applyUpdate(msg.data, msg.charts);
         }
     });
     
@@ -415,14 +437,22 @@ async function init() {
                 console.log('No data on server');
                 currentData = [];
             }
+            if (doc?.charts?.length) {
+                currentCharts = JSON.parse(JSON.stringify(doc.charts));
+                console.log('Loaded charts from server:', currentCharts.length, 'charts');
+            } else {
+                currentCharts = [];
+            }
         }
     } catch (e) {
         console.error('Failed to load initial data:', e);
         updateStatus('Server offline', false);
         currentData = [];
+        currentCharts = [];
     }
     
     renderTable(currentData);
+    renderCharts(currentCharts);
     
     console.log('Setting up SSE');
     await new Promise(r => setTimeout(r, 1000));

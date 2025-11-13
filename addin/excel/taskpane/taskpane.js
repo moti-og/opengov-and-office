@@ -71,6 +71,31 @@ async function readData() {
     });
 }
 
+async function getCharts() {
+    try {
+        return await Excel.run(async (context) => {
+            const sheet = context.workbook.worksheets.getActiveWorksheet();
+            const charts = sheet.charts;
+            charts.load('items/name, items/id');
+            await context.sync();
+            
+            const chartImages = [];
+            for (let chart of charts.items) {
+                const image = chart.getImage();
+                await context.sync();
+                chartImages.push({
+                    name: chart.name,
+                    image: image.value  // base64 string
+                });
+            }
+            return chartImages;
+        });
+    } catch (err) {
+        console.error('Error getting charts:', err);
+        return [];
+    }
+}
+
 async function writeData(data) {
     await Excel.run(async (context) => {
         const sheet = context.workbook.worksheets.getActiveWorksheet();
@@ -115,11 +140,14 @@ async function processQueue() {
     syncQueue = []; // Clear queue (we're sending the latest state)
     
     try {
-        console.log('Syncing to server:', data.length, 'rows');
+        // Get charts in addition to data
+        const charts = await getCharts();
+        console.log('Syncing to server:', data.length, 'rows,', charts.length, 'charts');
+        
         const response = await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}/update`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data, title: 'Excel Demo', type: 'excel' })
+            body: JSON.stringify({ data, charts, title: 'Excel Demo', type: 'excel' })
         });
         
         if (!response.ok) {

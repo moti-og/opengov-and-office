@@ -9,6 +9,10 @@ const documentSchema = new mongoose.Schema({
     columnWidths: { type: [Number], default: [] },  // Width in pixels for each column
     rowHeights: { type: [Number], default: [] }     // Height in pixels for each row
   },
+  charts: [{
+    name: { type: String },
+    image: { type: String }  // base64 encoded image
+  }],
   metadata: {
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
