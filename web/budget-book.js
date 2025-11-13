@@ -47,13 +47,32 @@ async function loadBudgetTable() {
         
         const result = await response.json();
         
-        if (!result.image) {
+        // Check for new format (screenshots) or legacy (single image)
+        const screenshots = result.screenshots || [];
+        const legacyImage = result.image;
+        
+        if (screenshots.length === 0 && !legacyImage) {
             container.innerHTML = '<div class="loading">No budget data available. Use the Excel add-in to update the budget book.</div>';
             return;
         }
         
-        // Display the screenshot
-        container.innerHTML = `<img src="${result.image}" alt="Budget Table" class="budget-screenshot" />`;
+        // Display multiple screenshots or single legacy image
+        let html = '';
+        
+        if (screenshots.length > 0) {
+            // New format: multiple screenshots
+            html = screenshots.map((screenshot, index) => `
+                <div class="screenshot-section">
+                    <h3 class="screenshot-title">${escapeHtml(screenshot.address)}</h3>
+                    <img src="${screenshot.image}" alt="${escapeHtml(screenshot.address)}" class="budget-screenshot" />
+                </div>
+            `).join('');
+        } else if (legacyImage) {
+            // Legacy format: single image
+            html = `<img src="${legacyImage}" alt="Budget Table" class="budget-screenshot" />`;
+        }
+        
+        container.innerHTML = html;
         
         // Update timestamp and track it
         if (result.updatedAt) {
@@ -62,7 +81,8 @@ async function loadBudgetTable() {
             lastUpdatedAt = result.updatedAt;
         }
         
-        console.log('Budget screenshot loaded successfully');
+        const count = screenshots.length || (legacyImage ? 1 : 0);
+        console.log('Budget book loaded:', count, 'screenshot(s)');
         
     } catch (error) {
         console.error('Failed to load budget data:', error);

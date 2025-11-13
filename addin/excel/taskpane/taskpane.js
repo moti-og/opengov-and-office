@@ -14,29 +14,14 @@ Office.onReady(async (info) => {
         await init();
         setupChangeListener();
         setupModalHandlers();
-        
-        // Manual sync button
-        const btn = document.getElementById('manualSyncBtn');
-        if (btn) {
-            btn.onclick = async () => {
-                console.log('Manual sync triggered');
-                await sync();
-            };
-        }
+        setupDragDrop();
+        setupRangeManagement();
     }
 });
 
 function setupModalHandlers() {
     const modal = document.getElementById('modal');
-    const updateBudgetBtn = document.getElementById('updateBudgetBtn');
     const closeBtn = document.querySelector('.close');
-    
-    // Update budget book when button clicked
-    if (updateBudgetBtn) {
-        updateBudgetBtn.onclick = async () => {
-            await updateBudgetBook();
-        };
-    }
     
     // Close modal when X clicked
     if (closeBtn) {
@@ -53,30 +38,285 @@ function setupModalHandlers() {
     };
 }
 
-async function updateBudgetBook() {
-    const modal = document.getElementById('modal');
-    const modalText = modal.querySelector('p');
-    const modalIcon = modal.querySelector('.modal-icon');
+// ============ RANGE MANAGEMENT ============
+
+function setupRangeManagement() {
+    // Add spreadsheet range
+    document.getElementById('addSpreadsheetRange').onclick = () => {
+        addRangeToList('spreadsheetRanges');
+    };
+    
+    // Add budget range
+    document.getElementById('addBudgetRange').onclick = () => {
+        addRangeToList('budgetRanges');
+    };
+    
+    // Sync spreadsheet button
+    document.getElementById('syncSpreadsheetBtn').onclick = async () => {
+        await syncSpreadsheet();
+    };
+    
+    // Update budget book button
+    document.getElementById('updateBudgetBtn').onclick = async () => {
+        await updateBudgetBook();
+    };
+    
+    // Setup remove buttons
+    setupRemoveButtons();
+}
+
+function addRangeToList(listId) {
+    const list = document.getElementById(listId);
+    const index = list.children.length;
+    
+    const rangeItem = document.createElement('div');
+    rangeItem.className = 'range-item';
+    rangeItem.setAttribute('data-index', index);
+    rangeItem.draggable = true;
+    
+    rangeItem.innerHTML = `
+        <span class="drag-handle">≡</span>
+        <input type="text" class="range-input" placeholder="e.g. A1:F10" value="" />
+        <button class="remove-range-btn" title="Remove range">×</button>
+    `;
+    
+    list.appendChild(rangeItem);
+    
+    // Setup drag/drop for new item
+    setupDragDrop();
+    setupRemoveButtons();
+}
+
+function setupRemoveButtons() {
+    document.querySelectorAll('.remove-range-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            const rangeItem = e.target.closest('.range-item');
+            const list = rangeItem.parentElement;
+            
+            // Don't remove if it's the last one
+            if (list.children.length > 1) {
+                rangeItem.remove();
+                reindexList(list);
+            }
+        };
+    });
+}
+
+function reindexList(list) {
+    Array.from(list.children).forEach((item, index) => {
+        item.setAttribute('data-index', index);
+    });
+}
+
+function getRangesFromList(listId) {
+    const list = document.getElementById(listId);
+    const ranges = [];
+    
+    Array.from(list.children).forEach(item => {
+        const input = item.querySelector('.range-input');
+        const value = input.value.trim().toUpperCase();
+        if (value) {
+            ranges.push(value);
+        }
+    });
+    
+    return ranges;
+}
+
+// ============ DRAG & DROP ============
+
+let draggedElement = null;
+
+function setupDragDrop() {
+    document.querySelectorAll('.range-item').forEach(item => {
+        item.draggable = true;
+        
+        item.ondragstart = (e) => {
+            draggedElement = item;
+            item.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        };
+        
+        item.ondragend = (e) => {
+            item.classList.remove('dragging');
+            draggedElement = null;
+        };
+        
+        item.ondragover = (e) => {
+            e.preventDefault();
+            const list = item.parentElement;
+            const afterElement = getDragAfterElement(list, e.clientY);
+            
+            if (afterElement == null) {
+                list.appendChild(draggedElement);
+            } else {
+                list.insertBefore(draggedElement, afterElement);
+            }
+            
+            reindexList(list);
+        };
+    });
+}
+
+function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('.range-item:not(.dragging)')];
+    
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+// ============ SPREADSHEET SYNC ============
+
+async function syncSpreadsheet() {
+    const ranges = getRangesFromList('spreadsheetRanges');
+    
+    if (ranges.length === 0) {
+        showModal('⚠️', 'Please add at least one range to sync', 'warning');
+        return;
+    }
+    
+    console.log('Syncing spreadsheet ranges:', ranges);
+    showModal('⏳', 'Syncing ranges to spreadsheet...', 'info');
     
     try {
-        // Get the range from input
-        const rangeInput = document.getElementById('rangeInput');
-        const rangeAddress = rangeInput.value.trim().toUpperCase();
+        // Read data from all specified ranges
+        const rangeData = await readMultipleRanges(ranges);
         
-        if (!rangeAddress) {
-            modalIcon.textContent = '⚠️';
-            modalText.textContent = 'Please enter a range (e.g., A1:F10)';
-            modal.style.display = 'block';
-            setTimeout(() => { modal.style.display = 'none'; }, 3000);
+        // Get charts (keep existing behavior)
+        const charts = await getCharts();
+        
+        // Send to server
+        const response = await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                ranges: rangeData,
+                charts,
+                title: 'Excel Demo', 
+                type: 'excel' 
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        showModal('✅', 'Successfully synced to spreadsheet!', 'success');
+        updateStatus('✓ Synced', true);
+        
+    } catch (error) {
+        console.error('Sync failed:', error);
+        showModal('❌', 'Failed to sync. Please try again.', 'error');
+        updateStatus('Sync failed', false);
+    }
+}
+
+async function readMultipleRanges(rangeAddresses) {
+    return await Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.getActiveWorksheet();
+        const results = [];
+        
+        for (const address of rangeAddresses) {
+            try {
+                const range = sheet.getRange(address);
+                range.load('values, address');
+                await context.sync();
+                
+                results.push({
+                    address: address,
+                    data: range.values.map(row => row.map(cell => cell ? String(cell) : ''))
+                });
+            } catch (err) {
+                console.error(`Failed to read range ${address}:`, err);
+                // Skip invalid ranges
+            }
+        }
+        
+        return results;
+    });
+}
+
+async function writeMultipleRanges(rangeData) {
+    await Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.getActiveWorksheet();
+        
+        for (const item of rangeData) {
+            try {
+                const range = sheet.getRange(item.address);
+                range.values = item.data;
+            } catch (err) {
+                console.error(`Failed to write range ${item.address}:`, err);
+            }
+        }
+        
+        await context.sync();
+    });
+}
+
+// ============ BUDGET BOOK ============
+
+async function updateBudgetBook() {
+    const ranges = getRangesFromList('budgetRanges');
+    
+    if (ranges.length === 0) {
+        showModal('⚠️', 'Please add at least one range to capture', 'warning');
+        return;
+    }
+    
+    console.log('Capturing budget book ranges:', ranges);
+    showModal('⏳', 'Capturing screenshots...', 'info');
+    
+    try {
+        const screenshots = [];
+        
+        // Capture each range as a screenshot
+        for (const rangeAddress of ranges) {
+            const image = await captureRangeScreenshot(rangeAddress);
+            if (image) {
+                screenshots.push({
+                    address: rangeAddress,
+                    image: image
+                });
+            }
+        }
+        
+        if (screenshots.length === 0) {
+            showModal('⚠️', 'Failed to capture any screenshots', 'warning');
             return;
         }
         
-        modalIcon.textContent = '⏳';
-        modalText.textContent = `Capturing range ${rangeAddress}...`;
-        modal.style.display = 'block';
+        console.log(`Captured ${screenshots.length} screenshots`);
         
-        // Capture screenshot of the specified range
-        const image = await Excel.run(async (context) => {
+        // Send to budget book API
+        const response = await fetch(`${SERVER_URL}/api/budget-book/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ screenshots })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        showModal('✅', `Successfully updated budget book with ${screenshots.length} section(s)!`, 'success');
+        
+    } catch (error) {
+        console.error('Failed to update budget book:', error);
+        showModal('❌', 'Failed to update budget book. Please try again.', 'error');
+    }
+}
+
+async function captureRangeScreenshot(rangeAddress) {
+    try {
+        return await Excel.run(async (context) => {
             const sheet = context.workbook.worksheets.getActiveWorksheet();
             const range = sheet.getRange(rangeAddress);
             
@@ -92,47 +332,52 @@ async function updateBudgetBook() {
             
             return imageData;
         });
-        
-        if (!image) {
-            modalIcon.textContent = '⚠️';
-            modalText.textContent = 'Failed to capture screenshot';
-            setTimeout(() => { modal.style.display = 'none'; }, 3000);
-            return;
-        }
-        
-        console.log('Screenshot captured, size:', image.length);
-        modalText.textContent = 'Uploading to budget book...';
-        
-        // Send screenshot to budget book API
-        const response = await fetch(`${SERVER_URL}/api/budget-book/update`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        
-        // Success!
-        modalIcon.textContent = '✅';
-        modalText.textContent = 'The sheet contents have been added to your budget book';
-        console.log('Budget book updated successfully');
-        
-        setTimeout(() => {
-            modal.style.display = 'none';
-        }, 3000);
-        
     } catch (error) {
-        console.error('Failed to update budget book:', error);
-        modalIcon.textContent = '❌';
-        modalText.textContent = 'Failed to update budget book. Please try again.';
-        
+        console.error(`Failed to capture ${rangeAddress}:`, error);
+        return null;
+    }
+}
+
+// ============ MODAL HELPERS ============
+
+function showModal(icon, message, type) {
+    const modal = document.getElementById('modal');
+    const modalIcon = modal.querySelector('.modal-icon');
+    const modalText = modal.querySelector('p');
+    const modalTitle = modal.querySelector('h3');
+    
+    modalIcon.textContent = icon;
+    modalText.textContent = message;
+    
+    // Update title based on type
+    const titles = {
+        success: 'Success!',
+        error: 'Error',
+        warning: 'Warning',
+        info: 'Processing...'
+    };
+    modalTitle.textContent = titles[type] || 'Notification';
+    
+    // Update title color
+    const colors = {
+        success: '#28a745',
+        error: '#dc3545',
+        warning: '#ffc107',
+        info: '#0078d4'
+    };
+    modalTitle.style.color = colors[type] || '#333';
+    
+    modal.style.display = 'block';
+    
+    // Auto-close after 3 seconds unless it's an error
+    if (type !== 'info') {
         setTimeout(() => {
             modal.style.display = 'none';
         }, 3000);
     }
 }
+
+// ============ LEGACY FUNCTIONS (for auto-sync) ============
 
 function updateStatus(text, connected) {
     document.getElementById('syncLabel').textContent = text;
@@ -161,7 +406,6 @@ async function getCharts() {
             
             const chartImages = [];
             for (let chart of charts.items) {
-                // getImage() needs width, height, and fittingMode parameters
                 const image = chart.getImage(600, 400, Excel.ImageFittingMode.fit);
                 await context.sync();
                 
@@ -186,27 +430,20 @@ async function getCharts() {
     }
 }
 
-async function writeData(data) {
-    await Excel.run(async (context) => {
-        const sheet = context.workbook.worksheets.getActiveWorksheet();
-        
-        // DON'T clear - just update values to preserve formatting
-        if (data && data.length > 0) {
-            const maxCols = Math.max(...data.map(r => r.length));
-            const range = sheet.getRangeByIndexes(0, 0, data.length, maxCols);
-            range.values = data;
-        }
-        
-        await context.sync();
-    });
-}
-
 async function queueSync() {
     try {
-        const data = await readData();
+        const ranges = getRangesFromList('spreadsheetRanges');
+        
+        // Only sync if ranges are specified
+        if (ranges.length === 0) {
+            console.log('No ranges specified - skipping auto-sync');
+            return;
+        }
+        
+        const data = await readMultipleRanges(ranges);
         syncQueue.push(data);
         
-        // Debounce the queue processing, not individual edits
+        // Debounce the queue processing
         clearTimeout(window.queueTimeout);
         window.queueTimeout = setTimeout(processQueue, 500);
     } catch (err) {
@@ -220,18 +457,17 @@ async function processQueue() {
     if (syncInProgress || syncQueue.length === 0) return;
     
     syncInProgress = true;
-    const data = syncQueue[syncQueue.length - 1]; // Take latest
-    syncQueue = []; // Clear queue (we're sending the latest state)
+    const rangeData = syncQueue[syncQueue.length - 1]; // Take latest
+    syncQueue = []; // Clear queue
     
     try {
-        // Get charts in addition to data
         const charts = await getCharts();
-        console.log('Syncing to server:', data.length, 'rows,', charts.length, 'charts');
+        console.log('Auto-syncing to server:', rangeData.length, 'ranges,', charts.length, 'charts');
         
         const response = await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}/update`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data, charts, title: 'Excel Demo', type: 'excel' })
+            body: JSON.stringify({ ranges: rangeData, charts, title: 'Excel Demo', type: 'excel' })
         });
         
         if (!response.ok) {
@@ -249,34 +485,29 @@ async function processQueue() {
     
     syncInProgress = false;
     
-    // Process next item if queue filled up while we were syncing
+    // Process next item if queue filled up
     if (syncQueue.length > 0) {
         setTimeout(processQueue, 100);
     }
 }
 
-// Legacy sync function for manual sync button
-async function sync() {
-    await queueSync();
-}
-
-async function applyUpdate(data, sourceType) {
+async function applyUpdate(rangeData, sourceType) {
     if (isUpdating) {
         console.log('Already updating');
         return;
     }
     
-    // Ignore updates that came from Excel (prevent echo/formatting loss)
+    // Ignore updates that came from Excel (prevent echo)
     if (sourceType === 'excel') {
         console.log('Ignoring update - came from Excel (preventing echo)');
         return;
     }
     
-    console.log('Applying update from web:', data.length, 'rows');
+    console.log('Applying update from web:', rangeData?.length, 'ranges');
     isUpdating = true;
     
     try {
-        await writeData(data);
+        await writeMultipleRanges(rangeData);
         updateStatus('✓ Updated from web', true);
     } catch (err) {
         if (err.message?.includes('cell-editing mode')) {
@@ -314,13 +545,13 @@ function setupSSE() {
     eventSource.addEventListener('message', async (e) => {
         const msg = JSON.parse(e.data);
         if (msg.type === 'data-update' && msg.documentId === DOCUMENT_ID) {
-            await applyUpdate(msg.data, msg.sourceType);
+            await applyUpdate(msg.ranges, msg.sourceType);
         }
     });
     
     eventSource.onopen = () => {
         reconnectAttempts = 0;
-        updateStatus('✓ Live sync', true);
+        updateStatus('✓ Sync health', true);
     };
     
     eventSource.onerror = () => {
@@ -348,34 +579,6 @@ async function init() {
             console.error('Server health check failed');
             isUpdating = false;
             return;
-        }
-        
-        const excelData = await readData();
-        const hasExcel = excelData.length > 0 && excelData.some(row => row.some(cell => cell));
-        console.log('Excel has data:', hasExcel, excelData.length, 'rows');
-        
-        const docRes = await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}`, {
-            headers: { 'Cache-Control': 'no-cache' }
-        });
-        
-        if (docRes.ok) {
-            const doc = await docRes.json();
-            const hasServer = doc?.data?.length > 0;
-            console.log('Server has data:', hasServer, doc?.data?.length || 0, 'rows');
-            
-            if (hasExcel) {
-                // Excel has data - push to server
-                console.log('Syncing Excel data to server');
-                await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}/update`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ data: excelData, title: 'Excel Demo', type: 'excel' })
-                });
-            } else if (hasServer) {
-                // Server has data, Excel empty - pull from server
-                console.log('Loading server data into Excel');
-                await writeData(doc.data);
-            }
         }
         
         updateStatus('✓ Connected', true);

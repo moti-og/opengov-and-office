@@ -6,7 +6,7 @@ const DOCUMENT_ID = 'excel-demo-doc';
 
 let eventSource = null;
 let isUpdating = false;
-let currentData = [];
+let currentRanges = [];  // Array of {address, data}
 let currentCharts = [];
 let syncQueue = [];
 let syncInProgress = false;
@@ -57,7 +57,7 @@ function setupModalHandlers() {
             modal.style.display = 'block';
             setTimeout(() => {
                 modal.style.display = 'none';
-            }, 3000); // Auto-close after 3 seconds
+            }, 3000);
         };
     }
     
@@ -110,38 +110,49 @@ function setupModalHandlers() {
     };
 }
 
-function renderTable(data) {
+// ========== MULTIPLE RANGES RENDERING ==========
+
+function renderRanges(ranges) {
     const container = document.getElementById('spreadsheet');
     
-    // Fixed 50x50 grid (persistent regardless of data)
-    const numRows = 50;
-    const numCols = 50;
-    
-    let html = '<table class="data-table"><thead><tr>';
-    
-    // Empty corner cell
-    html += '<th class="row-header"></th>';
-    
-    // Column headers (A, B, C, etc.)
-    for (let c = 0; c < numCols; c++) {
-        html += `<th>${String.fromCharCode(65 + c)}</th>`;
-    }
-    html += '</tr></thead><tbody>';
-    
-    // Data rows
-    for (let r = 0; r < numRows; r++) {
-        html += '<tr>';
-        // Row number
-        html += `<th class="row-header">${r + 1}</th>`;
-        // Data cells
-        for (let c = 0; c < numCols; c++) {
-            const value = data?.[r]?.[c] || '';
-            html += `<td contenteditable="true" data-row="${r}" data-col="${c}" tabindex="0">${escapeHtml(value)}</td>`;
-        }
-        html += '</tr>';
+    if (!ranges || ranges.length === 0) {
+        container.innerHTML = '<div class="no-data">No ranges synced yet. Use the Excel add-in to sync ranges.</div>';
+        return;
     }
     
-    html += '</tbody></table>';
+    let html = '';
+    
+    ranges.forEach((range, rangeIndex) => {
+        const { address, data } = range;
+        const numRows = data.length;
+        const numCols = data.length > 0 ? Math.max(...data.map(row => row.length)) : 0;
+        
+        html += `
+            <div class="range-container" data-range-index="${rangeIndex}">
+                <h3 class="range-title">${escapeHtml(address)}</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="row-header"></th>
+                            ${Array.from({length: numCols}, (_, c) => `<th>${String.fromCharCode(65 + c)}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map((row, r) => `
+                            <tr>
+                                <th class="row-header">${r + 1}</th>
+                                ${Array.from({length: numCols}, (_, c) => {
+                                    const value = row[c] || '';
+                                    return `<td contenteditable="true" data-range="${rangeIndex}" data-row="${r}" data-col="${c}" tabindex="0">${escapeHtml(value)}</td>`;
+                                }).join('')}
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    });
+    
     container.innerHTML = html;
     
     // Add event listeners to cells
@@ -153,13 +164,14 @@ function renderTable(data) {
 
 function handleCellKeydown(e) {
     const cell = e.target;
+    const rangeIndex = parseInt(cell.dataset.range);
     const row = parseInt(cell.dataset.row);
     const col = parseInt(cell.dataset.col);
     
     // Enter key - move down or blur
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        const nextCell = document.querySelector(`td[data-row="${row + 1}"][data-col="${col}"]`);
+        const nextCell = document.querySelector(`td[data-range="${rangeIndex}"][data-row="${row + 1}"][data-col="${col}"]`);
         if (nextCell) {
             nextCell.focus();
         } else {
@@ -182,7 +194,6 @@ function handleCellKeydown(e) {
             targetRow = row + 1;
             break;
         case 'ArrowLeft':
-            // Only navigate if cursor is at the start
             if (window.getSelection().toString().length === 0 && 
                 cell.selectionStart === 0) {
                 e.preventDefault();
@@ -192,7 +203,6 @@ function handleCellKeydown(e) {
             }
             break;
         case 'ArrowRight':
-            // Only navigate if cursor is at the end
             if (window.getSelection().toString().length === 0 && 
                 cell.selectionStart === cell.textContent.length) {
                 e.preventDefault();
@@ -215,10 +225,9 @@ function handleCellKeydown(e) {
     
     // Move to target cell
     if (targetRow !== row || targetCol !== col) {
-        const targetCell = document.querySelector(`td[data-row="${targetRow}"][data-col="${targetCol}"]`);
+        const targetCell = document.querySelector(`td[data-range="${rangeIndex}"][data-row="${targetRow}"][data-col="${targetCol}"]`);
         if (targetCell) {
             targetCell.focus();
-            // Select all content in the cell
             const range = document.createRange();
             range.selectNodeContents(targetCell);
             const sel = window.getSelection();
@@ -231,17 +240,20 @@ function handleCellKeydown(e) {
 function handleCellEdit(e) {
     if (isUpdating) return;
     
+    const rangeIndex = parseInt(e.target.dataset.range);
     const row = parseInt(e.target.dataset.row);
     const col = parseInt(e.target.dataset.col);
     const newValue = e.target.textContent.trim();
     
-    // Update current data immediately
-    if (!currentData[row]) currentData[row] = [];
-    currentData[row][col] = newValue;
+    // Update current ranges data immediately
+    if (!currentRanges[rangeIndex].data[row]) {
+        currentRanges[rangeIndex].data[row] = [];
+    }
+    currentRanges[rangeIndex].data[row][col] = newValue;
     
-    console.log(`Cell [${row},${col}] changed to: "${newValue}"`);
+    console.log(`Cell [Range ${rangeIndex}: ${currentRanges[rangeIndex].address}][${row},${col}] = "${newValue}"`);
     
-    // Queue sync immediately - queue handles batching
+    // Queue sync
     queueSync();
 }
 
@@ -275,41 +287,14 @@ function renderCharts(charts) {
     `).join('');
 }
 
-function readDataFromTable() {
-    const data = [];
-    let maxRow = -1, maxCol = -1;
-    
-    // Find actual data bounds
-    for (let r = 0; r < currentData.length; r++) {
-        if (currentData[r]) {
-            for (let c = 0; c < currentData[r].length; c++) {
-                if (currentData[r][c]) {
-                    maxRow = Math.max(maxRow, r);
-                    maxCol = Math.max(maxCol, c);
-                }
-            }
-        }
-    }
-    
-    if (maxRow === -1) return [];
-    
-    // Build clean data array
-    for (let r = 0; r <= maxRow; r++) {
-        const row = [];
-        for (let c = 0; c <= maxCol; c++) {
-            row.push(currentData[r]?.[c] || '');
-        }
-        data.push(row);
-    }
-    
-    return data;
-}
+// ========== SYNC ==========
 
 function queueSync() {
-    const data = readDataFromTable();
-    syncQueue.push(data);
+    // Clone current ranges for queue
+    const rangesSnapshot = JSON.parse(JSON.stringify(currentRanges));
+    syncQueue.push(rangesSnapshot);
     
-    // Debounce the queue processing, not individual edits
+    // Debounce
     clearTimeout(window.queueTimeout);
     window.queueTimeout = setTimeout(processQueue, 400);
 }
@@ -318,15 +303,15 @@ async function processQueue() {
     if (syncInProgress || syncQueue.length === 0) return;
     
     syncInProgress = true;
-    const data = syncQueue[syncQueue.length - 1]; // Take latest
-    syncQueue = []; // Clear queue (we're sending the latest state)
+    const ranges = syncQueue[syncQueue.length - 1]; // Take latest
+    syncQueue = []; // Clear queue
     
     try {
-        console.log('Syncing to server:', data.length, 'rows');
+        console.log('Syncing to server:', ranges.length, 'ranges');
         const response = await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}/update`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data, title: 'Excel Demo', type: 'web' })
+            body: JSON.stringify({ ranges, title: 'Excel Demo', type: 'web' })
         });
         
         if (!response.ok) {
@@ -344,24 +329,25 @@ async function processQueue() {
     
     syncInProgress = false;
     
-    // Process next item if queue filled up while we were syncing
+    // Process next item if queue filled up
     if (syncQueue.length > 0) {
         setTimeout(processQueue, 100);
     }
 }
 
-// Legacy sync function for manual sync button
-async function sync() {
-    queueSync();
-}
-
-function applyUpdate(data, charts) {
+function applyUpdate(ranges, charts, sourceType) {
     if (isUpdating) return;
     
-    console.log('Applying update from Excel:', data.length, 'rows,', (charts?.length || 0), 'charts');
+    // Ignore updates from web (prevent echo)
+    if (sourceType === 'web') {
+        console.log('Ignoring update - came from web (preventing echo)');
+        return;
+    }
+    
+    console.log('Applying update from Excel:', ranges?.length || 0, 'ranges,', charts?.length || 0, 'charts');
     isUpdating = true;
     
-    currentData = JSON.parse(JSON.stringify(data)); // Deep clone
+    currentRanges = JSON.parse(JSON.stringify(ranges || [])); // Deep clone
     if (charts) {
         currentCharts = JSON.parse(JSON.stringify(charts));
     }
@@ -372,31 +358,33 @@ function applyUpdate(data, charts) {
     
     if (isEditingCell) {
         console.log('User is editing a cell - updating cells in place without re-render');
-        // Update all cells except the one being edited
+        const editingRange = parseInt(activeElement.dataset.range);
         const editingRow = parseInt(activeElement.dataset.row);
         const editingCol = parseInt(activeElement.dataset.col);
         
+        // Update all cells except the one being edited
         document.querySelectorAll('td[contenteditable]').forEach(cell => {
+            const rangeIndex = parseInt(cell.dataset.range);
             const row = parseInt(cell.dataset.row);
             const col = parseInt(cell.dataset.col);
             
             // Skip the cell being edited
-            if (row === editingRow && col === editingCol) {
+            if (rangeIndex === editingRange && row === editingRow && col === editingCol) {
                 return;
             }
             
             // Update the cell value
-            const value = currentData[row]?.[col] || '';
+            const value = currentRanges[rangeIndex]?.data[row]?.[col] || '';
             if (cell.textContent !== value) {
                 cell.textContent = value;
             }
         });
     } else {
         // No active editing, safe to re-render
-        renderTable(currentData);
+        renderRanges(currentRanges);
     }
     
-    // Always render charts (they don't interfere with editing)
+    // Always render charts
     renderCharts(currentCharts);
     
     updateStatus('✓ Updated from Excel', true);
@@ -416,13 +404,15 @@ function setupSSE() {
     eventSource.addEventListener('message', (e) => {
         const msg = JSON.parse(e.data);
         if (msg.type === 'data-update' && msg.documentId === DOCUMENT_ID) {
-            applyUpdate(msg.data, msg.charts);
+            // Use ranges if available, otherwise fall back to legacy data
+            const ranges = msg.ranges || (msg.data ? [{ address: 'Legacy', data: msg.data }] : []);
+            applyUpdate(ranges, msg.charts, msg.sourceType);
         }
     });
     
     eventSource.onopen = () => {
         reconnectAttempts = 0;
-        updateStatus('✓ Live sync', true);
+        updateStatus('✓ Sync health', true);
     };
     
     eventSource.onerror = () => {
@@ -445,15 +435,6 @@ async function init() {
     
     setupModalHandlers();
     
-    // Manual sync button
-    const btn = document.getElementById('manualSyncBtn');
-    if (btn) {
-        btn.onclick = async () => {
-            console.log('Manual sync triggered');
-            await sync();
-        };
-    }
-    
     try {
         const res = await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}`, {
             headers: { 'Cache-Control': 'no-cache' }
@@ -461,13 +442,19 @@ async function init() {
         
         if (res.ok) {
             const doc = await res.json();
-            if (doc?.data?.length) {
-                currentData = JSON.parse(JSON.stringify(doc.data));
-                console.log('Loaded data from server:', currentData.length, 'rows');
+            
+            // Use ranges if available, otherwise fall back to legacy data
+            if (doc?.ranges?.length) {
+                currentRanges = JSON.parse(JSON.stringify(doc.ranges));
+                console.log('Loaded ranges from server:', currentRanges.length, 'ranges');
+            } else if (doc?.data?.length) {
+                currentRanges = [{ address: 'Legacy', data: JSON.parse(JSON.stringify(doc.data)) }];
+                console.log('Loaded legacy data from server');
             } else {
                 console.log('No data on server');
-                currentData = [];
+                currentRanges = [];
             }
+            
             if (doc?.charts?.length) {
                 currentCharts = JSON.parse(JSON.stringify(doc.charts));
                 console.log('Loaded charts from server:', currentCharts.length, 'charts');
@@ -478,11 +465,11 @@ async function init() {
     } catch (e) {
         console.error('Failed to load initial data:', e);
         updateStatus('Server offline', false);
-        currentData = [];
+        currentRanges = [];
         currentCharts = [];
     }
     
-    renderTable(currentData);
+    renderRanges(currentRanges);
     renderCharts(currentCharts);
     
     console.log('Setting up SSE');

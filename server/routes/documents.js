@@ -42,14 +42,20 @@ router.post('/:id/update', async (req, res) => {
         documentId: req.params.id,
         title: req.body.title || 'Untitled',
         type: req.body.type || 'excel',
-        data: req.body.data,
+        data: req.body.data || [],
+        ranges: req.body.ranges || [],
         layout: req.body.layout || { columnWidths: [], rowHeights: [] },
         charts: req.body.charts || []
       });
     } else {
-      // Update data if provided
+      // Update data if provided (legacy support)
       if (req.body.data !== undefined) {
         document.data = req.body.data;
+      }
+      
+      // Update ranges if provided (new format)
+      if (req.body.ranges !== undefined) {
+        document.ranges = req.body.ranges;
       }
       
       // Update layout if provided
@@ -68,7 +74,8 @@ router.post('/:id/update', async (req, res) => {
     const broadcast = req.app.get('broadcast');
     broadcast('data-update', { 
       documentId: document.documentId, 
-      data: document.data,
+      data: document.data,  // Legacy
+      ranges: document.ranges,  // New
       layout: document.layout,
       charts: document.charts,
       sourceType: req.body.type || 'unknown'  // Track where update came from

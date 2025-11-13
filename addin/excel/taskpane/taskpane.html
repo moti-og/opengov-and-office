@@ -17,17 +17,36 @@
             <span id="syncLabel">Initializing...</span>
         </div>
         
-        <button id="manualSyncBtn" class="sync-btn">Manual Sync</button>
-        
-        <div class="budget-book-section">
-            <h2>OpenGov Budget Book</h2>
-            <div class="book-icon">📖</div>
-            <div class="range-input-container">
-                <label for="rangeInput">Range to capture:</label>
-                <input type="text" id="rangeInput" placeholder="e.g. A1:F10" value="A1:F10" />
-                <small>Leave as default to use current selection</small>
+        <!-- Section 1: Spreadsheet Sync -->
+        <div class="section">
+            <h2>📊 Spreadsheet Sync</h2>
+            <p class="section-description">Real-time bidirectional sync with editable web grid</p>
+            
+            <div id="spreadsheetRanges" class="range-list">
+                <div class="range-item" data-index="0">
+                    <span class="drag-handle">≡</span>
+                    <input type="text" class="range-input" placeholder="e.g. A1:F10" value="A1:F10" />
+                    <button class="remove-range-btn" title="Remove range">×</button>
+                </div>
             </div>
-            <button id="updateBudgetBtn" class="budget-btn">Update my budget book</button>
+            <button id="addSpreadsheetRange" class="add-range-btn">+ Add Range</button>
+            <button id="syncSpreadsheetBtn" class="sync-btn">Sync to Spreadsheet</button>
+        </div>
+        
+        <!-- Section 2: Budget Book -->
+        <div class="section budget-book-section">
+            <h2>📖 Budget Book</h2>
+            <p class="section-description">Capture screenshots for formatted budget view</p>
+            
+            <div id="budgetRanges" class="range-list">
+                <div class="range-item" data-index="0">
+                    <span class="drag-handle">≡</span>
+                    <input type="text" class="range-input" placeholder="e.g. A1:F10" value="A1:F10" />
+                    <button class="remove-range-btn" title="Remove range">×</button>
+                </div>
+            </div>
+            <button id="addBudgetRange" class="add-range-btn">+ Add Range</button>
+            <button id="updateBudgetBtn" class="budget-btn">Update Budget Book</button>
         </div>
     </div>
     

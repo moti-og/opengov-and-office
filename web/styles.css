@@ -41,6 +41,32 @@ html, body {
     align-items: center;
 }
 
+.header-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.nav-link-btn {
+    background: rgba(255,255,255,0.15);
+    color: white;
+    border: 2px solid rgba(255,255,255,0.5);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.nav-link-btn:hover {
+    background: rgba(255,255,255,0.25);
+    border-color: white;
+    transform: translateY(-1px);
+}
+
 .spreadsheet-header h1 {
     font-size: 20px;
     font-weight: 600;
@@ -71,6 +97,30 @@ html, body {
     flex: 1;
     overflow: auto;
     padding: 20px;
+}
+
+.range-container {
+    margin-bottom: 40px;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.range-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #0078d4;
+    margin: 0 0 15px 0;
+    font-family: 'Courier New', monospace;
+}
+
+.no-data {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+    font-size: 16px;
+    font-style: italic;
 }
 
 .data-table {

@@ -2,19 +2,19 @@ const express = require('express');
 const router = express.Router();
 const BudgetBook = require('../models/BudgetBook');
 
-// GET budget book image
+// GET budget book data
 router.get('/', async (req, res) => {
   try {
-    // Try to find the budget book data
     let budgetBook = await BudgetBook.findOne();
     
-    if (!budgetBook || !budgetBook.image) {
-      // Return empty if not found
-      return res.json({ image: null, updatedAt: null });
+    if (!budgetBook) {
+      return res.json({ screenshots: [], image: null, updatedAt: null });
     }
     
+    // Return both new and legacy format
     res.json({
-      image: budgetBook.image,
+      screenshots: budgetBook.screenshots || [],
+      image: budgetBook.image || null,  // Legacy support
       updatedAt: budgetBook.updatedAt
     });
   } catch (error) {
@@ -23,27 +23,36 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST/UPDATE budget book image
+// POST/UPDATE budget book
 router.post('/update', async (req, res) => {
   try {
-    const { image } = req.body;
+    const { image, screenshots } = req.body;
     
-    if (!image || typeof image !== 'string') {
-      return res.status(400).json({ error: 'Invalid image format' });
+    // Validate input - need either image (legacy) or screenshots (new)
+    if (!image && (!screenshots || !Array.isArray(screenshots))) {
+      return res.status(400).json({ error: 'Invalid request format' });
     }
     
-    // Find existing or create new
     let budgetBook = await BudgetBook.findOne();
     
     if (!budgetBook) {
-      budgetBook = new BudgetBook({ image });
+      budgetBook = new BudgetBook({
+        image: image || '',
+        screenshots: screenshots || []
+      });
     } else {
-      budgetBook.image = image;
+      if (image) {
+        budgetBook.image = image;
+      }
+      if (screenshots) {
+        budgetBook.screenshots = screenshots;
+      }
     }
     
     await budgetBook.save();
     
-    console.log('Budget book updated, image size:', image.length);
+    const count = screenshots ? screenshots.length : 1;
+    console.log('Budget book updated:', count, 'screenshot(s)');
     
     res.json({
       success: true,
