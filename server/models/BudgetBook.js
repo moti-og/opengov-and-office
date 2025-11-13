@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const budgetBookSchema = new mongoose.Schema({
-  data: { type: [[String]], default: [] },
+  image: { type: String, default: '' }, // base64 image string
   updatedAt: { type: Date, default: Date.now }
 });
 

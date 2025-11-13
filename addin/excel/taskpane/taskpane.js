@@ -60,26 +60,42 @@ async function updateBudgetBook() {
     
     try {
         modalIcon.textContent = '⏳';
-        modalText.textContent = 'Reading table data...';
+        modalText.textContent = 'Capturing table screenshot...';
         modal.style.display = 'block';
         
-        // Read the current table data
-        const data = await readData();
+        // Capture screenshot of the used range
+        const image = await Excel.run(async (context) => {
+            const sheet = context.workbook.worksheets.getActiveWorksheet();
+            const usedRange = sheet.getUsedRange();
+            
+            // Capture as image (width, height, fittingMode)
+            const rangeImage = usedRange.getImage(1200, 800, Excel.ImageFittingMode.fit);
+            await context.sync();
+            
+            // Add data URI prefix if not present
+            let imageData = rangeImage.value;
+            if (imageData && !imageData.startsWith('data:')) {
+                imageData = 'data:image/png;base64,' + imageData;
+            }
+            
+            return imageData;
+        });
         
-        if (!data || data.length === 0) {
+        if (!image) {
             modalIcon.textContent = '⚠️';
-            modalText.textContent = 'No data found in the active sheet';
+            modalText.textContent = 'Failed to capture screenshot';
             setTimeout(() => { modal.style.display = 'none'; }, 3000);
             return;
         }
         
+        console.log('Screenshot captured, size:', image.length);
         modalText.textContent = 'Uploading to budget book...';
         
-        // Send to budget book API
+        // Send screenshot to budget book API
         const response = await fetch(`${SERVER_URL}/api/budget-book/update`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data })
+            body: JSON.stringify({ image })
         });
         
         if (!response.ok) {
