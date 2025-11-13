@@ -35,6 +35,14 @@ router.post('/', async (req, res) => {
 
 router.post('/:id/update', async (req, res) => {
   try {
+    console.log('Update request received:', {
+      documentId: req.params.id,
+      hasData: !!req.body.data,
+      hasRanges: !!req.body.ranges,
+      rangesCount: req.body.ranges?.length,
+      type: req.body.type
+    });
+    
     let document = await Document.findOne({ documentId: req.params.id });
     if (!document) {
       // Create if doesn't exist
@@ -47,7 +55,9 @@ router.post('/:id/update', async (req, res) => {
         layout: req.body.layout || { columnWidths: [], rowHeights: [] },
         charts: req.body.charts || []
       });
+      console.log('Creating new document');
     } else {
+      console.log('Updating existing document');
       // Update data if provided (legacy support)
       if (req.body.data !== undefined) {
         document.data = req.body.data;
@@ -71,6 +81,8 @@ router.post('/:id/update', async (req, res) => {
       document.metadata.version += 1;
     }
     await document.save();
+    console.log('Document saved successfully');
+    
     const broadcast = req.app.get('broadcast');
     broadcast('data-update', { 
       documentId: document.documentId, 
@@ -82,6 +94,7 @@ router.post('/:id/update', async (req, res) => {
     });
     res.json(document);
   } catch (error) {
+    console.error('Error updating document:', error);
     res.status(400).json({ error: error.message });
   }
 });

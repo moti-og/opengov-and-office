@@ -26,21 +26,30 @@ router.get('/', async (req, res) => {
 // POST/UPDATE budget book
 router.post('/update', async (req, res) => {
   try {
+    console.log('Budget book update request:', {
+      hasImage: !!req.body.image,
+      hasScreenshots: !!req.body.screenshots,
+      screenshotsCount: req.body.screenshots?.length
+    });
+    
     const { image, screenshots } = req.body;
     
     // Validate input - need either image (legacy) or screenshots (new)
     if (!image && (!screenshots || !Array.isArray(screenshots))) {
-      return res.status(400).json({ error: 'Invalid request format' });
+      console.error('Invalid budget book request format');
+      return res.status(400).json({ error: 'Invalid request format - need image or screenshots array' });
     }
     
     let budgetBook = await BudgetBook.findOne();
     
     if (!budgetBook) {
+      console.log('Creating new budget book');
       budgetBook = new BudgetBook({
         image: image || '',
         screenshots: screenshots || []
       });
     } else {
+      console.log('Updating existing budget book');
       if (image) {
         budgetBook.image = image;
       }
@@ -52,7 +61,7 @@ router.post('/update', async (req, res) => {
     await budgetBook.save();
     
     const count = screenshots ? screenshots.length : 1;
-    console.log('Budget book updated:', count, 'screenshot(s)');
+    console.log('Budget book updated successfully:', count, 'screenshot(s)');
     
     res.json({
       success: true,
@@ -60,7 +69,7 @@ router.post('/update', async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating budget book:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message, stack: error.stack });
   }
 });
 
