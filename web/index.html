@@ -15,10 +15,9 @@
                 <div class="header-content">
                     <h1>📊 OpenGov Office Sync</h1>
                     <div class="header-actions">
-                        <a href="/budget-book.html" class="nav-link-btn">📖 Budget Book</a>
-                        <button id="installAddinBtn" class="install-btn">
-                            📥 Install Excel Add-in
-                        </button>
+                        <button id="whatIsThisBtn" class="header-btn">❓ What is this?</button>
+                        <a href="/budget-book.html" class="header-btn">📖 Budget Book</a>
+                        <button id="installAddinBtn" class="header-btn">📥 Install Excel Add-in</button>
                     </div>
                 </div>
             </div>
@@ -97,6 +96,16 @@
             <div class="modal-icon">📊</div>
             <h3>Excel Charts</h3>
             <div id="charts-container"></div>
+        </div>
+    </div>
+    
+    <!-- What is This Modal -->
+    <div id="whatIsThisModal" class="info-modal">
+        <div class="info-modal-content">
+            <span class="info-modal-close">&times;</span>
+            <h2 id="infoModalTitle">What is this?</h2>
+            <div id="infoModalBody" class="info-modal-body"></div>
+            <button id="infoModalBtn" class="info-modal-button">Got it</button>
         </div>
     </div>
 

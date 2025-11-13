@@ -18,6 +18,80 @@ function updateStatus(text, connected) {
     document.getElementById('syncDot').className = 'dot ' + (connected ? 'connected' : 'disconnected');
 }
 
+// ========== WHAT IS THIS MODAL ==========
+
+async function loadWhatIsThisModal() {
+    try {
+        const response = await fetch(`${SERVER_URL}/budget-book-info.json`);
+        if (!response.ok) {
+            console.error('Failed to load modal content');
+            return;
+        }
+        
+        const config = await response.json();
+        
+        // Setup modal handlers
+        const modal = document.getElementById('whatIsThisModal');
+        const btn = document.getElementById('whatIsThisBtn');
+        const closeBtn = document.querySelector('.info-modal-close');
+        const gotItBtn = document.getElementById('infoModalBtn');
+        
+        if (!modal || !btn) return;
+        
+        // Populate modal content
+        document.getElementById('infoModalTitle').textContent = config.title;
+        document.getElementById('infoModalBtn').textContent = config.buttonText;
+        
+        const modalBody = document.getElementById('infoModalBody');
+        modalBody.innerHTML = config.items.map(item => {
+            let text = item.text;
+            
+            // If there's a link, wrap the linkText in an anchor
+            if (item.link && item.linkText) {
+                text = text.replace(item.linkText, `<a href="${item.link}" target="_blank" class="info-item-link">${item.linkText}</a>`);
+            }
+            
+            return `
+                <div class="info-item">
+                    <span class="info-item-arrow">→</span>
+                    <div class="info-item-content">
+                        <span class="info-item-label">${item.label}</span>
+                        <span class="info-item-text"> ${text}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Open modal
+        btn.onclick = () => {
+            modal.style.display = 'block';
+        };
+        
+        // Close modal handlers
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                modal.style.display = 'none';
+            };
+        }
+        
+        if (gotItBtn) {
+            gotItBtn.onclick = () => {
+                modal.style.display = 'none';
+            };
+        }
+        
+        // Close when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error loading modal content:', error);
+    }
+}
+
 function setupModalHandlers() {
     // Budget Book Modal
     const modal = document.getElementById('modal');
@@ -437,6 +511,7 @@ async function init() {
     isUpdating = true;
     
     setupModalHandlers();
+    await loadWhatIsThisModal();
     
     try {
         const res = await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}`, {
