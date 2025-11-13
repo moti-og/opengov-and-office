@@ -39,8 +39,12 @@ function setupLogoVideo() {
         };
     }
     
-    // Start the cycle
-    playAndScheduleNext();
+    // Wait 10-20 seconds before first play
+    const initialWaitTime = (Math.random() * 10 + 10) * 1000; // 10-20 seconds in ms
+    console.log(`Logo video will start in ${Math.round(initialWaitTime / 1000)} seconds`);
+    setTimeout(() => {
+        playAndScheduleNext();
+    }, initialWaitTime);
 }
 
 // ========== WHAT IS THIS MODAL ==========
