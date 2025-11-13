@@ -11,9 +11,36 @@ async function init() {
     console.log('Budget Book page loading...');
     await loadBudgetTable();
     await loadWhatIsThisModal();
+    setupLogoVideo();
     
     // Poll for updates every 2 seconds
     setInterval(checkForUpdates, 2000);
+}
+
+// ========== LOGO VIDEO CONTROL ==========
+
+function setupLogoVideo() {
+    const video = document.getElementById('cityLogo');
+    if (!video) return;
+    
+    function playAndScheduleNext() {
+        // Play the video
+        video.play().catch(err => console.log('Video play prevented:', err));
+        
+        // When video ends, wait random time before playing again
+        video.onended = () => {
+            // Random wait time between 30-59 seconds
+            const waitTime = (Math.random() * 29 + 30) * 1000; // 30-59 seconds in ms
+            console.log(`Logo video will replay in ${Math.round(waitTime / 1000)} seconds`);
+            
+            setTimeout(() => {
+                playAndScheduleNext();
+            }, waitTime);
+        };
+    }
+    
+    // Start the cycle
+    playAndScheduleNext();
 }
 
 // ========== WHAT IS THIS MODAL ==========

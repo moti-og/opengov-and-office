@@ -14,14 +14,8 @@
       "text": "Excel add-in auto-syncs your spreadsheet to the web. Click 'Update Budget Book' to capture formatted screenshots. Perfect for creating polished budget presentations from raw Excel data."
     },
     {
-      "label": "Inspired by:",
-      "text": "This Lenny's Podcast episode",
-      "link": "https://www.lennyspodcast.com/",
-      "linkText": "This Lenny's Podcast episode"
-    },
-    {
       "label": "Example:",
-      "text": "See a live OpenGov Budget Book from Birmingham, MI",
+      "text": "Inspired bya live OpenGov Budget Book from Birmingham",
       "link": "https://stories.opengov.com/birminghammi/30265211-51e6-4116-b30d-8ba1b620b5f3/published/9HuuQTzGb?currentPageId=67c9cf80b8f5b2c4cb9cd5ab",
       "linkText": "Birmingham Budget Book"
     }
