@@ -14,10 +14,16 @@
             <div class="spreadsheet-header">
                 <div class="header-content">
                     <h1>📊 OpenGov Office Sync</h1>
-                    <div class="header-actions">
-                        <button id="whatIsThisBtn" class="header-btn">❓ What is this?</button>
-                        <a href="/budget-book.html" class="header-btn">📖 Budget Book</a>
-                        <button id="installAddinBtn" class="header-btn">📥 Install Excel Add-in</button>
+                    <div class="header-right">
+                        <div class="sync-status">
+                            <div id="syncDot" class="sync-dot"></div>
+                            <span id="syncLabel">Sync</span>
+                        </div>
+                        <div class="header-actions">
+                            <button id="whatIsThisBtn" class="header-btn">❓ What is this?</button>
+                            <a href="/budget-book.html" class="header-btn">📖 Budget Book</a>
+                            <button id="installAddinBtn" class="header-btn">📥 Install Excel Add-in</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -25,26 +31,6 @@
             <button id="viewChartsBtn" class="view-charts-btn" style="display: none;">
                 📊 View Charts (<span id="chartCount">0</span>)
             </button>
-        </div>
-        
-        <!-- Side Panel (matching Excel add-in) -->
-        <div class="sidepane">
-            <div class="container">
-                <h1>📊 Web Sync</h1>
-                
-                <div class="sync-indicator">
-                    <div id="syncDot" class="dot"></div>
-                    <span id="syncLabel">Connecting...</span>
-                </div>
-                
-                <button id="manualSyncBtn" class="sync-btn">Manual Sync</button>
-                
-                <div class="budget-book-section">
-                    <h2>OpenGov Budget Book</h2>
-                    <div class="book-icon">📖</div>
-                    <button id="updateBudgetBtn" class="budget-btn">Update my budget book</button>
-                </div>
-            </div>
         </div>
     </div>
     

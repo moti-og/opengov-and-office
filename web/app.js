@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', init);
 
 function updateStatus(text, connected) {
     document.getElementById('syncLabel').textContent = text;
-    document.getElementById('syncDot').className = 'dot ' + (connected ? 'connected' : 'disconnected');
+    document.getElementById('syncDot').className = 'sync-dot ' + (connected ? 'connected' : 'disconnected');
 }
 
 // ========== WHAT IS THIS MODAL ==========
@@ -489,7 +489,7 @@ function setupSSE() {
     
     eventSource.onopen = () => {
         reconnectAttempts = 0;
-        updateStatus('✓ Sync health', true);
+        updateStatus('Sync', true);
     };
     
     eventSource.onerror = () => {
