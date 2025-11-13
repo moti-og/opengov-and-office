@@ -61,11 +61,17 @@ router.post('/:id/update', async (req, res) => {
       // Update data if provided (legacy support)
       if (req.body.data !== undefined) {
         document.data = req.body.data;
+        // Also wrap in ranges format for consistency
+        document.ranges = [{ address: 'A1:ZZ999', data: req.body.data }];
       }
       
       // Update ranges if provided (new format)
       if (req.body.ranges !== undefined) {
         document.ranges = req.body.ranges;
+        // Extract data from first range for legacy support
+        if (req.body.ranges[0]) {
+          document.data = req.body.ranges[0].data;
+        }
       }
       
       // Update layout if provided
