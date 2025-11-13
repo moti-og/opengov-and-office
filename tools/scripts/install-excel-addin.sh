@@ -19,7 +19,7 @@ echo ""
 
 # Download manifest
 echo "Downloading manifest..."
-MANIFEST_URL="https://opengov-and-office.onrender.com/manifest.xml"
+MANIFEST_URL="https://excelftw.onrender.com/manifest.xml"
 MANIFEST_PATH="$WEF_DIR/opengov-office-sync.xml"
 
 curl -L -o "$MANIFEST_PATH" "$MANIFEST_URL"
@@ -52,7 +52,7 @@ echo "  3. Under 'Developer Add-ins', click 'OpenGov Office Sync'"
 echo ""
 echo "The add-in panel will appear on the right side."
 echo ""
-echo "You can now open: https://opengov-and-office.onrender.com"
+echo "You can now open: https://excelftw.onrender.com"
 echo "to see real-time sync between Excel and the web!"
 echo ""
 

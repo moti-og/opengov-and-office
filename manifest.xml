@@ -12,11 +12,11 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="OpenGov Office Sync"/>
   <Description DefaultValue="Sync Excel data with OpenGov Budget Book"/>
-  <IconUrl DefaultValue="https://opengov-and-office.onrender.com/assets/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://opengov-and-office.onrender.com/assets/icon-64.png"/>
-  <SupportUrl DefaultValue="https://opengov-and-office.onrender.com/"/>
+  <IconUrl DefaultValue="https://excelftw.onrender.com/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://excelftw.onrender.com/assets/icon-64.png"/>
+  <SupportUrl DefaultValue="https://excelftw.onrender.com/"/>
   <AppDomains>
-    <AppDomain>https://opengov-and-office.onrender.com</AppDomain>
+    <AppDomain>https://excelftw.onrender.com</AppDomain>
   </AppDomains>
   
   <Hosts>
@@ -24,7 +24,7 @@
   </Hosts>
   
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://opengov-and-office.onrender.com/addin/excel/taskpane/taskpane.html"/>
+    <SourceLocation DefaultValue="https://excelftw.onrender.com/addin/excel/taskpane/taskpane.html"/>
   </DefaultSettings>
   
   <Permissions>ReadWriteDocument</Permissions>
@@ -76,14 +76,14 @@
     
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://opengov-and-office.onrender.com/assets/icon-16.png"/>
-        <bt:Image id="Icon.32x32" DefaultValue="https://opengov-and-office.onrender.com/assets/icon-32.png"/>
-        <bt:Image id="Icon.80x80" DefaultValue="https://opengov-and-office.onrender.com/assets/icon-80.png"/>
+        <bt:Image id="Icon.16x16" DefaultValue="https://excelftw.onrender.com/assets/icon-16.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://excelftw.onrender.com/assets/icon-32.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://excelftw.onrender.com/assets/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://opengov-and-office.onrender.com/"/>
-        <bt:Url id="Commands.Url" DefaultValue="https://opengov-and-office.onrender.com/addin/excel/commands/commands.html"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://opengov-and-office.onrender.com/addin/excel/taskpane/taskpane.html"/>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://excelftw.onrender.com/"/>
+        <bt:Url id="Commands.Url" DefaultValue="https://excelftw.onrender.com/addin/excel/commands/commands.html"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://excelftw.onrender.com/addin/excel/taskpane/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Get started with OpenGov Office Sync!"/>
