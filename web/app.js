@@ -115,44 +115,46 @@ function setupModalHandlers() {
 function renderRanges(ranges) {
     const container = document.getElementById('spreadsheet');
     
-    if (!ranges || ranges.length === 0) {
-        container.innerHTML = '<div class="no-data">No ranges synced yet. Use the Excel add-in to sync ranges.</div>';
-        return;
+    // Always show a persistent 100x100 grid
+    const numRows = 100;
+    const numCols = 100;
+    
+    // Flatten ranges into a single data structure
+    let flatData = [];
+    if (ranges && ranges.length > 0) {
+        // For now, just use the first range's data
+        // (Multi-range display can be added later if needed)
+        flatData = ranges[0]?.data || [];
     }
     
-    let html = '';
+    let html = '<table class="data-table"><thead><tr>';
     
-    ranges.forEach((range, rangeIndex) => {
-        const { address, data } = range;
-        const numRows = data.length;
-        const numCols = data.length > 0 ? Math.max(...data.map(row => row.length)) : 0;
-        
-        html += `
-            <div class="range-container" data-range-index="${rangeIndex}">
-                <h3 class="range-title">${escapeHtml(address)}</h3>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th class="row-header"></th>
-                            ${Array.from({length: numCols}, (_, c) => `<th>${String.fromCharCode(65 + c)}</th>`).join('')}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${data.map((row, r) => `
-                            <tr>
-                                <th class="row-header">${r + 1}</th>
-                                ${Array.from({length: numCols}, (_, c) => {
-                                    const value = row[c] || '';
-                                    return `<td contenteditable="true" data-range="${rangeIndex}" data-row="${r}" data-col="${c}" tabindex="0">${escapeHtml(value)}</td>`;
-                                }).join('')}
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-        `;
-    });
+    // Empty corner cell
+    html += '<th class="row-header"></th>';
     
+    // Column headers (A, B, C, etc.)
+    for (let c = 0; c < numCols; c++) {
+        const colLabel = c < 26 
+            ? String.fromCharCode(65 + c) 
+            : String.fromCharCode(64 + Math.floor(c / 26)) + String.fromCharCode(65 + (c % 26));
+        html += `<th>${colLabel}</th>`;
+    }
+    html += '</tr></thead><tbody>';
+    
+    // Data rows
+    for (let r = 0; r < numRows; r++) {
+        html += '<tr>';
+        // Row number
+        html += `<th class="row-header">${r + 1}</th>`;
+        // Data cells
+        for (let c = 0; c < numCols; c++) {
+            const value = flatData[r]?.[c] || '';
+            html += `<td contenteditable="true" data-row="${r}" data-col="${c}" tabindex="0">${escapeHtml(value)}</td>`;
+        }
+        html += '</tr>';
+    }
+    
+    html += '</tbody></table>';
     container.innerHTML = html;
     
     // Add event listeners to cells
@@ -164,14 +166,13 @@ function renderRanges(ranges) {
 
 function handleCellKeydown(e) {
     const cell = e.target;
-    const rangeIndex = parseInt(cell.dataset.range);
     const row = parseInt(cell.dataset.row);
     const col = parseInt(cell.dataset.col);
     
     // Enter key - move down or blur
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        const nextCell = document.querySelector(`td[data-range="${rangeIndex}"][data-row="${row + 1}"][data-col="${col}"]`);
+        const nextCell = document.querySelector(`td[data-row="${row + 1}"][data-col="${col}"]`);
         if (nextCell) {
             nextCell.focus();
         } else {
@@ -225,7 +226,7 @@ function handleCellKeydown(e) {
     
     // Move to target cell
     if (targetRow !== row || targetCol !== col) {
-        const targetCell = document.querySelector(`td[data-range="${rangeIndex}"][data-row="${targetRow}"][data-col="${targetCol}"]`);
+        const targetCell = document.querySelector(`td[data-row="${targetRow}"][data-col="${targetCol}"]`);
         if (targetCell) {
             targetCell.focus();
             const range = document.createRange();
@@ -240,18 +241,20 @@ function handleCellKeydown(e) {
 function handleCellEdit(e) {
     if (isUpdating) return;
     
-    const rangeIndex = parseInt(e.target.dataset.range);
     const row = parseInt(e.target.dataset.row);
     const col = parseInt(e.target.dataset.col);
     const newValue = e.target.textContent.trim();
     
     // Update current ranges data immediately
-    if (!currentRanges[rangeIndex].data[row]) {
-        currentRanges[rangeIndex].data[row] = [];
+    if (!currentRanges[0]) {
+        currentRanges[0] = { address: 'A1:CV100', data: [] };
     }
-    currentRanges[rangeIndex].data[row][col] = newValue;
+    if (!currentRanges[0].data[row]) {
+        currentRanges[0].data[row] = [];
+    }
+    currentRanges[0].data[row][col] = newValue;
     
-    console.log(`Cell [Range ${rangeIndex}: ${currentRanges[rangeIndex].address}][${row},${col}] = "${newValue}"`);
+    console.log(`Cell [${row},${col}] = "${newValue}"`);
     
     // Queue sync
     queueSync();
