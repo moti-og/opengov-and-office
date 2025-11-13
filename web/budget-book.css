@@ -87,12 +87,143 @@ body {
     color: #2d5016;
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.what-is-this-btn {
+    padding: 8px 16px;
+    background: #2d5016;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.what-is-this-btn:hover {
+    background: #3d6026;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(45, 80, 22, 0.3);
+}
+
 .language-selector select {
     padding: 8px 15px;
     border: 1px solid #333;
     border-radius: 20px;
     font-size: 12px;
     background: white;
+}
+
+/* Info Modal */
+.info-modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    animation: fadeIn 0.2s;
+}
+
+.info-modal-content {
+    background: #1e1e1e;
+    color: #e0e0e0;
+    margin: 8% auto;
+    padding: 40px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    position: relative;
+    animation: slideIn 0.3s;
+}
+
+.info-modal-close {
+    color: #888;
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 32px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.info-modal-close:hover {
+    color: #fff;
+}
+
+.info-modal-content h2 {
+    color: #4a9eff;
+    font-size: 28px;
+    margin: 0 0 30px 0;
+    font-weight: 600;
+}
+
+.info-modal-body {
+    margin-bottom: 30px;
+}
+
+.info-item {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.info-item-arrow {
+    color: #4a9eff;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.info-item-content {
+    flex: 1;
+}
+
+.info-item-label {
+    font-weight: 600;
+    color: #fff;
+    display: inline;
+}
+
+.info-item-text {
+    display: inline;
+    color: #e0e0e0;
+    line-height: 1.6;
+}
+
+.info-item-link {
+    color: #4a9eff;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.info-item-link:hover {
+    color: #6bb4ff;
+    text-decoration: underline;
+}
+
+.info-modal-button {
+    background: #2d2d2d;
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.info-modal-button:hover {
+    background: #3d3d3d;
 }
 
 /* Hero Section */

@@ -10,9 +10,78 @@ document.addEventListener('DOMContentLoaded', init);
 async function init() {
     console.log('Budget Book page loading...');
     await loadBudgetTable();
+    await loadWhatIsThisModal();
     
     // Poll for updates every 2 seconds
     setInterval(checkForUpdates, 2000);
+}
+
+// ========== WHAT IS THIS MODAL ==========
+
+async function loadWhatIsThisModal() {
+    try {
+        const response = await fetch(`${SERVER_URL}/budget-book-info.json`);
+        if (!response.ok) {
+            console.error('Failed to load modal content');
+            return;
+        }
+        
+        const config = await response.json();
+        
+        // Setup modal handlers
+        const modal = document.getElementById('whatIsThisModal');
+        const btn = document.getElementById('whatIsThisBtn');
+        const closeBtn = document.querySelector('.info-modal-close');
+        const gotItBtn = document.getElementById('infoModalBtn');
+        
+        // Populate modal content
+        document.getElementById('infoModalTitle').textContent = config.title;
+        document.getElementById('infoModalBtn').textContent = config.buttonText;
+        
+        const modalBody = document.getElementById('infoModalBody');
+        modalBody.innerHTML = config.items.map(item => {
+            let text = item.text;
+            
+            // If there's a link, wrap the linkText in an anchor
+            if (item.link && item.linkText) {
+                text = text.replace(item.linkText, `<a href="${item.link}" target="_blank" class="info-item-link">${item.linkText}</a>`);
+            }
+            
+            return `
+                <div class="info-item">
+                    <span class="info-item-arrow">→</span>
+                    <div class="info-item-content">
+                        <span class="info-item-label">${item.label}</span>
+                        <span class="info-item-text"> ${text}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Open modal
+        btn.onclick = () => {
+            modal.style.display = 'block';
+        };
+        
+        // Close modal handlers
+        closeBtn.onclick = () => {
+            modal.style.display = 'none';
+        };
+        
+        gotItBtn.onclick = () => {
+            modal.style.display = 'none';
+        };
+        
+        // Close when clicking outside
+        window.onclick = (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+        
+    } catch (error) {
+        console.error('Error loading modal content:', error);
+    }
 }
 
 async function checkForUpdates() {

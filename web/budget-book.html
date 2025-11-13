@@ -25,10 +25,13 @@
                 <a href="#" class="nav-link">CAPITAL</a>
                 <a href="#" class="nav-link">TABLE OF CONTENTS</a>
             </nav>
-            <div class="language-selector">
-                <select>
-                    <option>SELECT LANGUAGE</option>
-                </select>
+            <div class="header-right">
+                <button id="whatIsThisBtn" class="what-is-this-btn">❓ What is this?</button>
+                <div class="language-selector">
+                    <select>
+                        <option>SELECT LANGUAGE</option>
+                    </select>
+                </div>
             </div>
         </div>
     </header>
@@ -79,6 +82,16 @@
 
         </div>
     </main>
+
+    <!-- What is This Modal -->
+    <div id="whatIsThisModal" class="info-modal">
+        <div class="info-modal-content">
+            <span class="info-modal-close">&times;</span>
+            <h2 id="infoModalTitle">What is this?</h2>
+            <div id="infoModalBody" class="info-modal-body"></div>
+            <button id="infoModalBtn" class="info-modal-button">Got it</button>
+        </div>
+    </div>
 
     <script src="budget-book.js"></script>
 </body>
