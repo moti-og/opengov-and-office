@@ -31,13 +31,10 @@ function setupModalHandlers() {
     const updateBudgetBtn = document.getElementById('updateBudgetBtn');
     const closeBtn = document.querySelector('.close');
     
-    // Open modal when button clicked
+    // Update budget book when button clicked
     if (updateBudgetBtn) {
-        updateBudgetBtn.onclick = () => {
-            modal.style.display = 'block';
-            setTimeout(() => {
-                modal.style.display = 'none';
-            }, 3000); // Auto-close after 3 seconds
+        updateBudgetBtn.onclick = async () => {
+            await updateBudgetBook();
         };
     }
     
@@ -54,6 +51,59 @@ function setupModalHandlers() {
             modal.style.display = 'none';
         }
     };
+}
+
+async function updateBudgetBook() {
+    const modal = document.getElementById('modal');
+    const modalText = modal.querySelector('p');
+    const modalIcon = modal.querySelector('.modal-icon');
+    
+    try {
+        modalIcon.textContent = '⏳';
+        modalText.textContent = 'Reading table data...';
+        modal.style.display = 'block';
+        
+        // Read the current table data
+        const data = await readData();
+        
+        if (!data || data.length === 0) {
+            modalIcon.textContent = '⚠️';
+            modalText.textContent = 'No data found in the active sheet';
+            setTimeout(() => { modal.style.display = 'none'; }, 3000);
+            return;
+        }
+        
+        modalText.textContent = 'Uploading to budget book...';
+        
+        // Send to budget book API
+        const response = await fetch(`${SERVER_URL}/api/budget-book/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        // Success!
+        modalIcon.textContent = '✅';
+        modalText.textContent = 'The sheet contents have been added to your budget book';
+        console.log('Budget book updated successfully');
+        
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 3000);
+        
+    } catch (error) {
+        console.error('Failed to update budget book:', error);
+        modalIcon.textContent = '❌';
+        modalText.textContent = 'Failed to update budget book. Please try again.';
+        
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 3000);
+    }
 }
 
 function updateStatus(text, connected) {

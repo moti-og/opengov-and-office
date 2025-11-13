@@ -100,6 +100,9 @@ app.set('broadcast', broadcast);
 const documentsRouter = require('./routes/documents');
 app.use('/api/documents', documentsRouter);
 
+const budgetBookRouter = require('./routes/budgetBook');
+app.use('/api/budget-book', budgetBookRouter);
+
 app.listen(PORT, () => {
   console.log(`✓ Server running on http://localhost:${PORT}`);
   console.log(`✓ SSE endpoint: http://localhost:${PORT}/api/stream`);
