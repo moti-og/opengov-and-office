@@ -79,13 +79,19 @@ async function getCharts() {
             charts.load('items/name, items/id');
             await context.sync();
             
+            console.log('Found', charts.items.length, 'charts on active sheet');
+            
             const chartImages = [];
             for (let chart of charts.items) {
-                const image = chart.getImage();
+                // getImage() needs width, height, and fittingMode parameters
+                const image = chart.getImage(600, 400, Excel.ImageFittingMode.fit);
                 await context.sync();
+                
+                console.log('Captured chart:', chart.name, 'image length:', image.value?.length);
+                
                 chartImages.push({
                     name: chart.name,
-                    image: image.value  // base64 string
+                    image: image.value  // base64 string with data URI prefix
                 });
             }
             return chartImages;
