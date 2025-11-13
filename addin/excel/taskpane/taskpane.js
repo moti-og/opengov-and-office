@@ -41,19 +41,9 @@ function setupModalHandlers() {
 // ============ RANGE MANAGEMENT ============
 
 function setupRangeManagement() {
-    // Add spreadsheet range
-    document.getElementById('addSpreadsheetRange').onclick = () => {
-        addRangeToList('spreadsheetRanges');
-    };
-    
     // Add budget range
     document.getElementById('addBudgetRange').onclick = () => {
         addRangeToList('budgetRanges');
-    };
-    
-    // Sync spreadsheet button
-    document.getElementById('syncSpreadsheetBtn').onclick = async () => {
-        await syncSpreadsheet();
     };
     
     // Update budget book button
@@ -173,88 +163,27 @@ function getDragAfterElement(container, y) {
     }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
-// ============ SPREADSHEET SYNC ============
+// ============ SPREADSHEET SYNC (Simple Auto-Sync) ============
 
-async function syncSpreadsheet() {
-    const ranges = getRangesFromList('spreadsheetRanges');
-    
-    if (ranges.length === 0) {
-        showModal('⚠️', 'Please add at least one range to sync', 'warning');
-        return;
-    }
-    
-    console.log('Syncing spreadsheet ranges:', ranges);
-    showModal('⏳', 'Syncing ranges to spreadsheet...', 'info');
-    
-    try {
-        // Read data from all specified ranges
-        const rangeData = await readMultipleRanges(ranges);
-        
-        // Get charts (keep existing behavior)
-        const charts = await getCharts();
-        
-        // Send to server
-        const response = await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}/update`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                ranges: rangeData,
-                charts,
-                title: 'Excel Demo', 
-                type: 'excel' 
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        
-        showModal('✅', 'Successfully synced to spreadsheet!', 'success');
-        updateStatus('✓ Synced', true);
-        
-    } catch (error) {
-        console.error('Sync failed:', error);
-        showModal('❌', 'Failed to sync. Please try again.', 'error');
-        updateStatus('Sync failed', false);
-    }
-}
-
-async function readMultipleRanges(rangeAddresses) {
+async function readData() {
     return await Excel.run(async (context) => {
         const sheet = context.workbook.worksheets.getActiveWorksheet();
-        const results = [];
-        
-        for (const address of rangeAddresses) {
-            try {
-                const range = sheet.getRange(address);
-                range.load('values, address');
-                await context.sync();
-                
-                results.push({
-                    address: address,
-                    data: range.values.map(row => row.map(cell => cell ? String(cell) : ''))
-                });
-            } catch (err) {
-                console.error(`Failed to read range ${address}:`, err);
-                // Skip invalid ranges
-            }
-        }
-        
-        return results;
+        const usedRange = sheet.getUsedRange();
+        usedRange.load('values');
+        await context.sync();
+        return usedRange.values.map(row => row.map(cell => cell ? String(cell) : ''));
     });
 }
 
-async function writeMultipleRanges(rangeData) {
+async function writeData(data) {
     await Excel.run(async (context) => {
         const sheet = context.workbook.worksheets.getActiveWorksheet();
         
-        for (const item of rangeData) {
-            try {
-                const range = sheet.getRange(item.address);
-                range.values = item.data;
-            } catch (err) {
-                console.error(`Failed to write range ${item.address}:`, err);
-            }
+        // DON'T clear - just update values to preserve formatting
+        if (data && data.length > 0) {
+            const maxCols = Math.max(...data.map(r => r.length));
+            const range = sheet.getRangeByIndexes(0, 0, data.length, maxCols);
+            range.values = data;
         }
         
         await context.sync();
@@ -432,15 +361,7 @@ async function getCharts() {
 
 async function queueSync() {
     try {
-        const ranges = getRangesFromList('spreadsheetRanges');
-        
-        // Only sync if ranges are specified
-        if (ranges.length === 0) {
-            console.log('No ranges specified - skipping auto-sync');
-            return;
-        }
-        
-        const data = await readMultipleRanges(ranges);
+        const data = await readData();
         syncQueue.push(data);
         
         // Debounce the queue processing
@@ -457,17 +378,18 @@ async function processQueue() {
     if (syncInProgress || syncQueue.length === 0) return;
     
     syncInProgress = true;
-    const rangeData = syncQueue[syncQueue.length - 1]; // Take latest
+    const data = syncQueue[syncQueue.length - 1]; // Take latest
     syncQueue = []; // Clear queue
     
     try {
         const charts = await getCharts();
-        console.log('Auto-syncing to server:', rangeData.length, 'ranges,', charts.length, 'charts');
+        console.log('Auto-syncing to server:', data.length, 'rows,', charts.length, 'charts');
         
+        // Send as legacy format (single data array)
         const response = await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}/update`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ranges: rangeData, charts, title: 'Excel Demo', type: 'excel' })
+            body: JSON.stringify({ data, charts, title: 'Excel Demo', type: 'excel' })
         });
         
         if (!response.ok) {
@@ -491,7 +413,7 @@ async function processQueue() {
     }
 }
 
-async function applyUpdate(rangeData, sourceType) {
+async function applyUpdate(data, sourceType) {
     if (isUpdating) {
         console.log('Already updating');
         return;
@@ -503,11 +425,11 @@ async function applyUpdate(rangeData, sourceType) {
         return;
     }
     
-    console.log('Applying update from web:', rangeData?.length, 'ranges');
+    console.log('Applying update from web:', data?.length, 'rows');
     isUpdating = true;
     
     try {
-        await writeMultipleRanges(rangeData);
+        await writeData(data);
         updateStatus('✓ Updated from web', true);
     } catch (err) {
         if (err.message?.includes('cell-editing mode')) {
@@ -545,7 +467,9 @@ function setupSSE() {
     eventSource.addEventListener('message', async (e) => {
         const msg = JSON.parse(e.data);
         if (msg.type === 'data-update' && msg.documentId === DOCUMENT_ID) {
-            await applyUpdate(msg.ranges, msg.sourceType);
+            // Use ranges if available, otherwise use legacy data
+            const data = msg.data || (msg.ranges?.[0]?.data);
+            await applyUpdate(data, msg.sourceType);
         }
     });
     
