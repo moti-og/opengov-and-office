@@ -3,15 +3,15 @@
   "items": [
     {
       "label": "Prototype tool:",
-      "text": "Basic HTML/JavaScript frontend with MongoDB backend — serverless architecture for fast iteration"
+      "text": "Real-time sync between Excel and web using Node.js/Express backend with MongoDB — enables collaborative budget editing across platforms"
     },
     {
       "label": "Data source:",
-      "text": "ONLY Sampleville test data; storing responses in MongoDB to enable collaborative feedback and testing"
+      "text": "Live Excel data synced bidirectionally; captured as screenshots for the formatted Budget Book view"
     },
     {
       "label": "How to use:",
-      "text": "This is an idea and proposal. Product could own this since it's an internal tool. The primary issue would be access to data and writing back to OG, but that's relatively easy to solve."
+      "text": "Excel add-in auto-syncs your spreadsheet to the web. Click 'Update Budget Book' to capture formatted screenshots. Perfect for creating polished budget presentations from raw Excel data."
     },
     {
       "label": "Inspired by:",
