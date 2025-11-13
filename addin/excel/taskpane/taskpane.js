@@ -87,11 +87,17 @@ async function getCharts() {
                 const image = chart.getImage(600, 400, Excel.ImageFittingMode.fit);
                 await context.sync();
                 
-                console.log('Captured chart:', chart.name, 'image length:', image.value?.length);
+                // Add data URI prefix if not present
+                let imageData = image.value;
+                if (imageData && !imageData.startsWith('data:')) {
+                    imageData = 'data:image/png;base64,' + imageData;
+                }
+                
+                console.log('Captured chart:', chart.name, 'image length:', imageData?.length);
                 
                 chartImages.push({
                     name: chart.name,
-                    image: image.value  // base64 string with data URI prefix
+                    image: imageData
                 });
             }
             return chartImages;
