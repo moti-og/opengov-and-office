@@ -118,6 +118,42 @@ h1 {
     background: #1e7e34;
 }
 
+.range-input-container {
+    margin: 15px 0;
+    text-align: left;
+}
+
+.range-input-container label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 13px;
+    color: #333;
+    font-weight: 600;
+}
+
+.range-input-container input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    text-transform: uppercase;
+}
+
+.range-input-container input:focus {
+    outline: none;
+    border-color: #0078d4;
+}
+
+.range-input-container small {
+    display: block;
+    margin-top: 5px;
+    font-size: 11px;
+    color: #666;
+    font-style: italic;
+}
+
 /* Modal */
 .modal {
     display: none;

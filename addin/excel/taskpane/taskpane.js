@@ -59,17 +59,29 @@ async function updateBudgetBook() {
     const modalIcon = modal.querySelector('.modal-icon');
     
     try {
+        // Get the range from input
+        const rangeInput = document.getElementById('rangeInput');
+        const rangeAddress = rangeInput.value.trim().toUpperCase();
+        
+        if (!rangeAddress) {
+            modalIcon.textContent = '⚠️';
+            modalText.textContent = 'Please enter a range (e.g., A1:F10)';
+            modal.style.display = 'block';
+            setTimeout(() => { modal.style.display = 'none'; }, 3000);
+            return;
+        }
+        
         modalIcon.textContent = '⏳';
-        modalText.textContent = 'Capturing table screenshot...';
+        modalText.textContent = `Capturing range ${rangeAddress}...`;
         modal.style.display = 'block';
         
-        // Capture screenshot of the used range
+        // Capture screenshot of the specified range
         const image = await Excel.run(async (context) => {
             const sheet = context.workbook.worksheets.getActiveWorksheet();
-            const usedRange = sheet.getUsedRange();
+            const range = sheet.getRange(rangeAddress);
             
             // Capture as image (width, height, fittingMode)
-            const rangeImage = usedRange.getImage(1200, 800, Excel.ImageFittingMode.fit);
+            const rangeImage = range.getImage(1200, 800, Excel.ImageFittingMode.fit);
             await context.sync();
             
             // Add data URI prefix if not present
