@@ -11,10 +11,51 @@ async function init() {
     console.log('Budget Book page loading...');
     await loadBudgetTable();
     await loadWhatIsThisModal();
+    setupInstallModal();
     setupLogoVideo();
     
     // Poll for updates every 2 seconds
     setInterval(checkForUpdates, 2000);
+}
+
+// ========== INSTALL MODAL ==========
+
+function setupInstallModal() {
+    const modal = document.getElementById('modal');
+    const installBtn = document.getElementById('installAddinBtn');
+    const closeBtn = document.querySelector('.close');
+    
+    if (installBtn) {
+        installBtn.onclick = () => {
+            modal.style.display = 'block';
+        };
+    }
+    
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            modal.style.display = 'none';
+        };
+    }
+    
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+    
+    // Detect local vs production
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    
+    const windowsDownload = document.getElementById('windowsDownload');
+    const macDownload = document.getElementById('macDownload');
+    
+    if (isLocal) {
+        windowsDownload.href = '/install-excel-addin-local.bat';
+        macDownload.href = '/install-excel-addin-local.sh';
+    } else {
+        windowsDownload.href = '/install-excel-addin.bat';
+        macDownload.href = '/install-excel-addin.sh';
+    }
 }
 
 // ========== LOGO VIDEO CONTROL ==========

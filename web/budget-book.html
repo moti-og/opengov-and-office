@@ -26,13 +26,14 @@
                 <a href="#" class="nav-link">CAPITAL</a>
                 <a href="#" class="nav-link">TABLE OF CONTENTS</a>
             </nav>
-            <div class="header-right">
+            <div class="header-nav-box">
                 <div class="sync-status">
-                    <div class="sync-dot connected"></div>
-                    <span>Sync</span>
+                    <div id="syncDot" class="sync-dot connected"></div>
+                    <span id="syncLabel">Sync</span>
                 </div>
-                <a href="/" class="header-action-btn">📊 Spreadsheet</a>
-                <button id="whatIsThisBtn" class="header-action-btn">❓ What is this?</button>
+                <button id="whatIsThisBtn" class="nav-box-btn">What is this?</button>
+                <a href="/" class="nav-box-btn">Go to Spreadsheet</a>
+                <button id="installAddinBtn" class="nav-box-btn">Install Excel Add-in</button>
             </div>
         </div>
     </header>
@@ -91,6 +92,24 @@
             <h2 id="infoModalTitle">What is this?</h2>
             <div id="infoModalBody" class="info-modal-body"></div>
             <button id="infoModalBtn" class="info-modal-button">Got it</button>
+        </div>
+    </div>
+    
+    <!-- Install Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="modal-icon">📥</div>
+            <h3>Install Excel Add-in</h3>
+            <p>Choose your platform:</p>
+            <div class="button-group">
+                <a id="windowsDownload" href="/install-excel-addin.bat" download class="modal-btn modal-btn-primary">
+                    🪟 Windows
+                </a>
+                <a id="macDownload" href="/install-excel-addin.sh" download class="modal-btn modal-btn-primary">
+                    🍎 macOS
+                </a>
+            </div>
         </div>
     </div>
 
