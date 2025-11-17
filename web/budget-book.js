@@ -8,7 +8,6 @@ let lastUpdatedAt = null;
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
-    console.log('Budget Book page loading...');
     await loadBudgetTable();
     await loadWhatIsThisModal();
     setupInstallModal();
@@ -65,15 +64,10 @@ function setupLogoVideo() {
     if (!video) return;
     
     function playAndScheduleNext() {
-        // Play the video
-        video.play().catch(err => console.log('Video play prevented:', err));
+        video.play().catch(() => {});
         
-        // When video ends, wait random time before playing again
         video.onended = () => {
-            // Random wait time between 30-59 seconds
-            const waitTime = (Math.random() * 29 + 30) * 1000; // 30-59 seconds in ms
-            console.log(`Logo video will replay in ${Math.round(waitTime / 1000)} seconds`);
-            
+            const waitTime = (Math.random() * 29 + 30) * 1000; // 30-59 seconds
             setTimeout(() => {
                 playAndScheduleNext();
             }, waitTime);
@@ -81,8 +75,7 @@ function setupLogoVideo() {
     }
     
     // Wait 10-20 seconds before first play
-    const initialWaitTime = (Math.random() * 10 + 10) * 1000; // 10-20 seconds in ms
-    console.log(`Logo video will start in ${Math.round(initialWaitTime / 1000)} seconds`);
+    const initialWaitTime = (Math.random() * 10 + 10) * 1000;
     setTimeout(() => {
         playAndScheduleNext();
     }, initialWaitTime);
@@ -221,9 +214,6 @@ async function loadBudgetTable() {
             timestampEl.textContent = date.toLocaleString();
             lastUpdatedAt = result.updatedAt;
         }
-        
-        const count = screenshots.length || (legacyImage ? 1 : 0);
-        console.log('Budget book loaded:', count, 'screenshot(s)');
         
     } catch (error) {
         console.error('Failed to load budget data:', error);
