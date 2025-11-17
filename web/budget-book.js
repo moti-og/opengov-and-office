@@ -158,7 +158,6 @@ async function checkForUpdates() {
         
         // Only reload if we have a previous timestamp AND it changed
         if (lastUpdatedAt !== null && result.updatedAt && result.updatedAt !== lastUpdatedAt) {
-            console.log('New budget data detected, reloading...');
             await loadBudgetTable();
         }
     } catch (error) {
