@@ -97,18 +97,31 @@
     
     <!-- Install Modal -->
     <div id="modal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
+        <div class="modal-content install-modal">
+            <span class="close-install">&times;</span>
             <div class="modal-icon">📥</div>
             <h3>Install Excel Add-in</h3>
-            <p>Choose your platform:</p>
-            <div class="button-group">
-                <a id="windowsDownload" href="/install-excel-addin.bat" download class="modal-btn modal-btn-primary">
-                    🪟 Windows
+            <p>Choose your platform to download the installer:</p>
+            <div class="install-buttons">
+                <a href="/install-excel-addin.bat" download class="platform-btn windows-btn" id="windowsDownload">
+                    🪟 Windows<br>
+                    <span class="platform-sub">Download .bat</span>
                 </a>
-                <a id="macDownload" href="/install-excel-addin.sh" download class="modal-btn modal-btn-primary">
-                    🍎 macOS
+                <a href="/install-excel-addin.sh" download class="platform-btn mac-btn" id="macDownload">
+                    🍎 macOS<br>
+                    <span class="platform-sub">Download .sh</span>
                 </a>
+            </div>
+            <div class="install-instructions">
+                <h4>Installation Steps:</h4>
+                <ol>
+                    <li>Download the installer for your platform</li>
+                    <li><strong>Windows:</strong> Right-click → "Run as Administrator"<br>
+                        <strong>Mac:</strong> Open Terminal → <code>chmod +x install-excel-addin.sh && ./install-excel-addin.sh</code></li>
+                    <li>Follow the prompts</li>
+                    <li>Open Excel → Insert → My Add-ins → Developer Add-ins</li>
+                    <li>Select "OpenGov Office Sync"</li>
+                </ol>
             </div>
         </div>
     </div>

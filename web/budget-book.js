@@ -27,6 +27,7 @@ function setupInstallModal() {
     
     if (installBtn) {
         installBtn.onclick = () => {
+            console.log('Install button clicked on budget book page');
             modal.style.display = 'block';
         };
     }
