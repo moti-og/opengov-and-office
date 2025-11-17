@@ -26,10 +26,20 @@ function setupInstallModal() {
     const installBtn = document.getElementById('installAddinBtn');
     const closeBtn = document.querySelector('.close');
     
+    console.log('Modal element:', modal);
+    console.log('Install button:', installBtn);
+    console.log('Close button:', closeBtn);
+    
     if (installBtn) {
         installBtn.onclick = () => {
             console.log('Install button clicked on budget book page');
-            modal.style.display = 'block';
+            if (modal) {
+                console.log('Setting modal display to block');
+                modal.style.display = 'block';
+                console.log('Modal display after set:', modal.style.display);
+            } else {
+                console.error('Modal element not found!');
+            }
         };
     }
     
