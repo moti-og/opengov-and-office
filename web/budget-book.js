@@ -24,7 +24,7 @@ async function init() {
 function setupInstallModal() {
     const modal = document.getElementById('modal');
     const installBtn = document.getElementById('installAddinBtn');
-    const closeBtn = document.querySelector('.close');
+    const closeBtn = document.querySelector('.close-install'); // Updated selector
     
     console.log('Modal element:', modal);
     console.log('Install button:', installBtn);
@@ -37,6 +37,10 @@ function setupInstallModal() {
                 console.log('Setting modal display to block');
                 modal.style.display = 'block';
                 console.log('Modal display after set:', modal.style.display);
+                console.log('Modal computed background:', getComputedStyle(modal).backgroundColor);
+                console.log('Modal computed position:', getComputedStyle(modal).position);
+                console.log('Modal computed width:', getComputedStyle(modal).width);
+                console.log('Modal computed height:', getComputedStyle(modal).height);
             } else {
                 console.error('Modal element not found!');
             }
