@@ -1,3 +1,4 @@
+console.log('Budget book JS loaded');
 // Auto-detect server URL (production vs local)
 const SERVER_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:3001' 
