@@ -1,4 +1,3 @@
-console.log('Budget book JS loaded');
 // Auto-detect server URL (production vs local)
 const SERVER_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:3001' 
@@ -24,26 +23,11 @@ async function init() {
 function setupInstallModal() {
     const modal = document.getElementById('modal');
     const installBtn = document.getElementById('installAddinBtn');
-    const closeBtn = document.querySelector('.close-install'); // Updated selector
-    
-    console.log('Modal element:', modal);
-    console.log('Install button:', installBtn);
-    console.log('Close button:', closeBtn);
+    const closeBtn = document.querySelector('.close-install');
     
     if (installBtn) {
         installBtn.onclick = () => {
-            console.log('Install button clicked on budget book page');
-            if (modal) {
-                console.log('Setting modal display to block');
-                modal.style.display = 'block';
-                console.log('Modal display after set:', modal.style.display);
-                console.log('Modal computed background:', getComputedStyle(modal).backgroundColor);
-                console.log('Modal computed position:', getComputedStyle(modal).position);
-                console.log('Modal computed width:', getComputedStyle(modal).width);
-                console.log('Modal computed height:', getComputedStyle(modal).height);
-            } else {
-                console.error('Modal element not found!');
-            }
+            modal.style.display = 'block';
         };
     }
     
