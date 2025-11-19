@@ -18,6 +18,12 @@
       "text": "Based on a live Birmingham Budget Book from OpenGov",
       "link": "https://stories.opengov.com/birminghammi/30265211-51e6-4116-b30d-8ba1b620b5f3/published/9HuuQTzGb?currentPageId=67c9cf80b8f5b2c4cb9cd5ab",
       "linkText": "Birmingham Budget Book"
+    },
+    {
+      "label": "Source Code:",
+      "text": "View the project repository on GitHub",
+      "link": "https://github.com/moti-og/opengov-and-office",
+      "linkText": "GitHub"
     }
   ],
   "buttonText": "Got it"
