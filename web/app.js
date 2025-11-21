@@ -521,6 +521,7 @@ async function init() {
     
     setupModalHandlers();
     await loadWhatIsThisModal();
+    setupBudgetBookSidepane();
     
     try {
         const res = await fetch(`${SERVER_URL}/api/documents/${DOCUMENT_ID}`, {
