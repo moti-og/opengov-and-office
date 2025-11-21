@@ -567,3 +567,80 @@ async function init() {
     isUpdating = false;
     console.log('Ready');
 }
+
+// ========== BUDGET BOOK SIDEPANE ==========
+
+function setupBudgetBookSidepane() {
+    // Add budget range button
+    const addBudgetRangeBtn = document.getElementById('addBudgetRange');
+    if (addBudgetRangeBtn) {
+        addBudgetRangeBtn.onclick = () => {
+            addRangeToList('budgetRanges');
+        };
+    }
+    
+    // Update budget book button (show message - can only be done from Excel)
+    const updateBudgetBtn = document.getElementById('updateBudgetBtn');
+    if (updateBudgetBtn) {
+        updateBudgetBtn.onclick = async () => {
+            alert('Budget book updates must be done from the Excel add-in. Please install the add-in and use the "Update Budget Book" button there.');
+        };
+    }
+    
+    // Setup remove buttons
+    setupRemoveButtons();
+}
+
+function addRangeToList(listId) {
+    const list = document.getElementById(listId);
+    if (!list) return;
+    
+    const index = list.children.length;
+    const newItem = document.createElement('div');
+    newItem.className = 'range-item';
+    newItem.setAttribute('data-index', index);
+    newItem.innerHTML = `
+        <span class="drag-handle">≡</span>
+        <input type="text" class="range-input" placeholder="e.g. A1:F10" value="A1:F10" />
+        <button class="remove-range-btn" title="Remove range">×</button>
+    `;
+    list.appendChild(newItem);
+    
+    // Setup remove button
+    const removeBtn = newItem.querySelector('.remove-range-btn');
+    if (removeBtn) {
+        removeBtn.onclick = () => {
+            const list = newItem.parentElement;
+            if (list.children.length > 1) {
+                newItem.remove();
+                // Re-index remaining items
+                Array.from(list.children).forEach((item, idx) => {
+                    item.setAttribute('data-index', idx);
+                });
+            }
+        };
+    }
+}
+
+function setupRemoveButtons() {
+    document.querySelectorAll('.remove-range-btn').forEach(btn => {
+        // Only add if not already bound
+        if (!btn.dataset.bound) {
+            btn.dataset.bound = 'true';
+            btn.onclick = function() {
+                const item = this.closest('.range-item');
+                if (item) {
+                    const list = item.parentElement;
+                    // Don't remove if it's the last one
+                    if (list.children.length > 1) {
+                        item.remove();
+                        // Re-index remaining items
+                        Array.from(list.children).forEach((item, idx) => {
+                            item.setAttribute('data-index', idx);
+                        });
+                    }
+                }
+            };
+        }
+    });
+}
