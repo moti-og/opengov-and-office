@@ -30,6 +30,40 @@
                 📊 View Charts (<span id="chartCount">0</span>)
             </button>
         </div>
+        
+        <!-- Side Panel (matching Excel add-in) -->
+        <div class="sidepane">
+            <div class="container">
+                <h1>📊 Web Sync</h1>
+                
+                <div class="sync-indicator">
+                    <div id="sidepaneSyncDot" class="dot"></div>
+                    <span id="sidepaneSyncLabel">Connecting...</span>
+                </div>
+                
+                <!-- Section 1: Spreadsheet Sync -->
+                <div class="section">
+                    <h2>📊 Spreadsheet Sync</h2>
+                    <p class="section-description">Auto-syncing entire sheet with Excel in real-time</p>
+                </div>
+                
+                <!-- Section 2: Budget Book -->
+                <div class="section budget-book-section">
+                    <h2>📖 Budget Book</h2>
+                    <p class="section-description">Capture screenshots for formatted budget view</p>
+                    
+                    <div id="budgetRanges" class="range-list">
+                        <div class="range-item" data-index="0">
+                            <span class="drag-handle">≡</span>
+                            <input type="text" class="range-input" placeholder="e.g. A1:F10" value="A1:F10" />
+                            <button class="remove-range-btn" title="Remove range">×</button>
+                        </div>
+                    </div>
+                    <button id="addBudgetRange" class="add-range-btn">+ Add Range</button>
+                    <button id="updateBudgetBtn" class="budget-btn">Update Budget Book</button>
+                </div>
+            </div>
+        </div>
     </div>
     
     <!-- Budget Book Modal -->

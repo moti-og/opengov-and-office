@@ -28,6 +28,208 @@ html, body {
     overflow: hidden;
 }
 
+/* Side Panel (matching Excel add-in) */
+.sidepane {
+    width: 320px;
+    background: #f5f5f5;
+    border-left: 1px solid #ddd;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidepane .container {
+    padding: 20px;
+}
+
+.sidepane h1 {
+    color: #0078d4;
+    font-size: 24px;
+    margin: 0 0 20px 0;
+}
+
+.sidepane .sync-indicator {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.sidepane .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 12px;
+    background: #ccc;
+    transition: background 0.3s ease;
+}
+
+.sidepane .dot.connected {
+    background: #28a745;
+    box-shadow: 0 0 8px rgba(40, 167, 69, 0.6);
+    animation: pulse 2s infinite;
+}
+
+.sidepane .dot.disconnected {
+    background: #dc3545;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.sidepane #sidepaneSyncLabel {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+/* Section Styles */
+.sidepane .section {
+    margin-top: 30px;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.sidepane .section h2 {
+    color: #0078d4;
+    font-size: 18px;
+    margin: 0 0 10px 0;
+}
+
+.sidepane .section-description {
+    font-size: 12px;
+    color: #666;
+    margin: 0 0 20px 0;
+    font-style: italic;
+}
+
+.sidepane .budget-book-section h2 {
+    color: #28a745;
+}
+
+.sidepane .budget-btn {
+    width: 100%;
+    padding: 12px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 10px;
+}
+
+.sidepane .budget-btn:hover {
+    background: #218838;
+}
+
+.sidepane .budget-btn:active {
+    background: #1e7e34;
+}
+
+/* Range List (Drag/Drop) */
+.sidepane .range-list {
+    margin-bottom: 15px;
+}
+
+.sidepane .range-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: #f9f9f9;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    transition: all 0.2s;
+}
+
+.sidepane .range-item:hover {
+    background: #f0f0f0;
+}
+
+.sidepane .range-item.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.sidepane .drag-handle {
+    font-size: 18px;
+    color: #999;
+    cursor: grab;
+    user-select: none;
+    font-weight: bold;
+}
+
+.sidepane .drag-handle:active {
+    cursor: grabbing;
+}
+
+.sidepane .range-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    text-transform: uppercase;
+}
+
+.sidepane .range-input:focus {
+    outline: none;
+    border-color: #0078d4;
+}
+
+.sidepane .remove-range-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidepane .remove-range-btn:hover {
+    background: #c82333;
+}
+
+.sidepane .add-range-btn {
+    width: 100%;
+    padding: 10px;
+    background: #f0f0f0;
+    color: #333;
+    border: 2px dashed #ccc;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 10px;
+}
+
+.sidepane .add-range-btn:hover {
+    background: #e8e8e8;
+    border-color: #0078d4;
+    color: #0078d4;
+}
+
 .spreadsheet-header {
     background: linear-gradient(135deg, #0078d4 0%, #005ea6 100%);
     padding: 16px 24px;

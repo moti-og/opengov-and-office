@@ -14,8 +14,17 @@ let syncInProgress = false;
 document.addEventListener('DOMContentLoaded', init);
 
 function updateStatus(text, connected) {
-    document.getElementById('syncLabel').textContent = text;
-    document.getElementById('syncDot').className = 'sync-dot ' + (connected ? 'connected' : 'disconnected');
+    // Update header sync status
+    const syncLabel = document.getElementById('syncLabel');
+    const syncDot = document.getElementById('syncDot');
+    if (syncLabel) syncLabel.textContent = text;
+    if (syncDot) syncDot.className = 'sync-dot ' + (connected ? 'connected' : 'disconnected');
+    
+    // Update sidepane sync status
+    const sidepaneSyncLabel = document.getElementById('sidepaneSyncLabel');
+    const sidepaneSyncDot = document.getElementById('sidepaneSyncDot');
+    if (sidepaneSyncLabel) sidepaneSyncLabel.textContent = text;
+    if (sidepaneSyncDot) sidepaneSyncDot.className = 'dot ' + (connected ? 'connected' : 'disconnected');
 }
 
 // ========== WHAT IS THIS MODAL ==========
